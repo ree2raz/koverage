@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #0b0e14;
+  color: #e6e9ef;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* thin scrollbars to match the dark console look */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3240 transparent;
+}
