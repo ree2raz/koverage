@@ -5,6 +5,7 @@ description = "Beacon — drop-in LLM observability: SDK + ingestion + worker + 
 requires-python = ">=3.11"
 dependencies = [
     "llmcore",
+    "llmobs",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "sse-starlette>=2.1",
@@ -26,7 +27,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["llmobs", "beacon"]
+packages = ["beacon"]
 
 [tool.uv.sources]
 llmcore = { workspace = true }
+llmobs = { workspace = true }

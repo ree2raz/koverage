@@ -1,0 +1,28 @@
+[project]
+name = "underwriter"
+version = "0.1.0"
+description = "Underwriter — LLM evaluation harness scoring models as AI insurability risk"
+requires-python = ">=3.11"
+dependencies = [
+    "llmcore",
+    "llmobs",
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["underwriter"]
+
+[tool.uv.sources]
+llmcore = { workspace = true }
+llmobs = { workspace = true }

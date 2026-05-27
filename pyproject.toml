@@ -5,23 +5,25 @@ name = "ollive-platform"
 version = "0.0.0"
 description = "Ollive take-home: Beacon (LLM observability) + Underwriter (LLM evaluation) on a shared core"
 requires-python = ">=3.11"
-dependencies = ["llmcore", "beacon"]
+dependencies = ["llmcore", "llmobs", "beacon", "underwriter"]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["core", "beacon"]
+members = ["core", "llmobs", "beacon", "underwriter"]
 
 [tool.uv.sources]
 llmcore = { workspace = true }
+llmobs = { workspace = true }
 beacon = { workspace = true }
+underwriter = { workspace = true }
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.pytest.ini_options]
-testpaths = ["core/tests", "beacon/tests"]
+testpaths = ["core/tests", "beacon/tests", "underwriter/tests"]
 addopts = "-q"
 
 [tool.ruff]

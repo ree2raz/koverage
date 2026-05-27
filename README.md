@@ -51,6 +51,6 @@ Per-module run instructions land in `beacon/README.md` and
 - [x] **Phase 0** — monorepo, shared `llmcore` (router, memory, tools, pricing), compose infra
 - [x] **Phase 1** — Beacon core: llmobs SDK + gateway (SSE, multi-provider, cancel) + ingestion + worker + Postgres/Alembic
 - [ ] **Phase 2** — React web app: Chat · Observability · Evaluation
-- [ ] **Phase 3** — Underwriter eval module + scorecard + report
+- [x] **Phase 3** — Underwriter eval module: 4 suites, dual judges + κ, severity-weighted risk + bootstrap CIs, guardrail A/B, Insurability Index, 1-page PDF + web scorecard
 - [ ] **Phase 4** — deploy (compose one-command, k3d) + hardening + tests
 - [ ] **Phase 5** — docs + demo + submission
