@@ -1,0 +1,28 @@
+# Workspace root for the Ollive platform monorepo.
+# Members are installed editable into one venv; `uv run pytest` covers them all.
+[project]
+name = "ollive-platform"
+version = "0.0.0"
+description = "Ollive take-home: Beacon (LLM observability) + Underwriter (LLM evaluation) on a shared core"
+requires-python = ">=3.11"
+dependencies = ["llmcore"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["core"]
+
+[tool.uv.sources]
+llmcore = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["core/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

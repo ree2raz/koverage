@@ -1,0 +1,18 @@
+[project]
+name = "llmcore"
+version = "0.1.0"
+description = "Shared LLM layer (provider router, memory, tools, pricing) for the Ollive platform"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "openai>=1.40",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["llmcore"]

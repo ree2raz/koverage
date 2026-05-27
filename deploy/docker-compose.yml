@@ -1,0 +1,83 @@
+# Ollive platform — infrastructure plane.  One command:
+#   docker compose -f deploy/docker-compose.yml up
+#
+# Hybrid architecture: a real event bus (Redpanda / Kafka API) decouples
+# ingestion from persistence, and a single Postgres serves both transactional
+# chat state and analytics (via indexed rollup views). Application services
+# (gateway, ingestion, worker, web) are added to this file in Phase 1.
+
+name: ollive
+
+services:
+  # ── Transactional + analytics store: chat state, inference logs, rollups ────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-beacon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beacon}
+      POSTGRES_DB: ${POSTGRES_DB:-beacon}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beacon} -d ${POSTGRES_DB:-beacon}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Event bus: Kafka API, single binary, no Zookeeper ───────────────────────
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --check=false
+    ports:
+      - "9092:9092"    # external clients (host)
+      - "29092:29092"  # internal clients (compose network)
+      - "9644:9644"    # admin/metrics
+    volumes:
+      - rpdata:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  # ── One-shot: create topics (idempotent). Exits 0 when done. ────────────────
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        rpk topic create inference-events --brokers redpanda:29092 -p 3 -r 1 || true
+        rpk topic create inference-events-dlq --brokers redpanda:29092 -p 1 -r 1 || true
+        rpk topic list --brokers redpanda:29092
+    restart: "no"
+
+  # ── Redpanda Console: inspect topics/messages during the demo ───────────────
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    restart: unless-stopped
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
+  rpdata:
