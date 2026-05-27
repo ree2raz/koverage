@@ -59,6 +59,16 @@ class ModelResponse(BaseModel):
     finish_reason: str | None = None
 
 
+class StreamPiece(BaseModel):
+    """One item from a streaming generation: a token delta, or — on the final
+    chunk — the usage/finish_reason. Carrying usage in the stream lets callers
+    record cost and tokens without a second request."""
+
+    delta: str = ""
+    usage: Usage | None = None
+    finish_reason: str | None = None
+
+
 @runtime_checkable
 class ModelBackend(Protocol):
     """Minimal contract every model backend implements.

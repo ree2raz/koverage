@@ -49,7 +49,7 @@ Per-module run instructions land in `beacon/README.md` and
 ## Status
 
 - [x] **Phase 0** — monorepo, shared `llmcore` (router, memory, tools, pricing), compose infra
-- [ ] **Phase 1** — Beacon core: SDK + gateway + ingestion + worker + Postgres
+- [x] **Phase 1** — Beacon core: llmobs SDK + gateway (SSE, multi-provider, cancel) + ingestion + worker + Postgres/Alembic
 - [ ] **Phase 2** — React web app: Chat · Observability · Evaluation
 - [ ] **Phase 3** — Underwriter eval module + scorecard + report
 - [ ] **Phase 4** — deploy (compose one-command, k3d) + hardening + tests

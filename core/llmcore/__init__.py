@@ -12,7 +12,7 @@ from .memory import Memory
 from .pricing import cost_usd
 from .providers import OpenAICompatibleBackend, Router
 from .tools import CALCULATOR, CLOCK, DEFAULT_TOOLS, Tool
-from .types import Message, ModelBackend, ModelResponse, Role, ToolCall, Usage
+from .types import Message, ModelBackend, ModelResponse, Role, StreamPiece, ToolCall, Usage
 
 __all__ = [
     "Assistant",
@@ -26,6 +26,7 @@ __all__ = [
     "Message",
     "ModelBackend",
     "ModelResponse",
+    "StreamPiece",
     "Role",
     "ToolCall",
     "Usage",

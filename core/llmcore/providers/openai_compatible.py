@@ -18,7 +18,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from ..types import Message, ModelResponse, Role, ToolCall, Usage
+from ..types import Message, ModelResponse, Role, StreamPiece, ToolCall, Usage
 
 
 def _to_openai(messages: list[Message]) -> list[dict[str, Any]]:
@@ -109,15 +109,36 @@ class OpenAICompatibleBackend:
         )
 
     def stream(self, messages: list[Message], **params: Any) -> Iterator[str]:
+        """Plain token stream (content deltas only)."""
+        for piece in self.stream_events(messages, **params):
+            if piece.delta:
+                yield piece.delta
+
+    def stream_events(self, messages: list[Message], **params: Any) -> Iterator[StreamPiece]:
+        """Token deltas followed by a final piece carrying usage + finish_reason.
+
+        Requests `stream_options.include_usage` so the last chunk reports tokens;
+        gateways need that to attribute cost without a second call.
+        """
         kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": _to_openai(messages),
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
         kwargs.update(params)
         for chunk in self._client.chat.completions.create(**kwargs):
+            if chunk.usage:
+                yield StreamPiece(
+                    usage=Usage(
+                        prompt_tokens=chunk.usage.prompt_tokens or 0,
+                        completion_tokens=chunk.usage.completion_tokens or 0,
+                    )
+                )
             if not chunk.choices:
                 continue
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+            choice = chunk.choices[0]
+            if choice.delta and choice.delta.content:
+                yield StreamPiece(delta=choice.delta.content)
+            if choice.finish_reason:
+                yield StreamPiece(finish_reason=choice.finish_reason)
