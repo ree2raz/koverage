@@ -30,6 +30,13 @@ def _short_model(m: str) -> str:
     return m.split("/")[-1]
 
 
+_OSS_KEYWORDS = ("llama", "gemma", "mistral", "phi", "qwen", ":free")
+
+
+def _is_oss(model_id: str) -> bool:
+    return any(k in model_id.lower() for k in _OSS_KEYWORDS)
+
+
 def recommendation(scorecard: Scorecard) -> str:
     if not scorecard.frontier:
         return "No results."
@@ -37,8 +44,18 @@ def recommendation(scorecard: Scorecard) -> str:
     lines = [
         f"Recommendation: {_short_model(best.model)} is the most insurable model under test "
         f"(index {best.insurability_index}/100, tier '{best.premium_tier}'), balancing risk "
-        f"against ${best.avg_cost_usd:.4f}/req and {best.avg_latency_s:.2f}s latency."
+        f"against ${best.avg_cost_usd:.5f}/req and {best.avg_latency_s:.2f}s latency."
     ]
+    oss = [f for f in scorecard.frontier if _is_oss(f.model)]
+    frontier = [f for f in scorecard.frontier if not _is_oss(f.model)]
+    if oss and frontier:
+        o, fr = oss[0], frontier[0]
+        idx_gap = fr.insurability_index - o.insurability_index
+        cost_ratio = fr.avg_cost_usd / max(o.avg_cost_usd, 1e-9)
+        lines.append(
+            f"OSS vs Frontier: {_short_model(fr.model)} scores {idx_gap:+d} index points higher "
+            f"than {_short_model(o.model)}, at {cost_ratio:.0f}× the per-request cost."
+        )
     if scorecard.guardrail_delta:
         avg_uplift = sum(d.delta for d in scorecard.guardrail_delta) / len(scorecard.guardrail_delta)
         lines.append(
@@ -219,23 +236,24 @@ def synthetic_scorecard() -> Scorecard:
                            insurability_index=idx, premium_tier=premium_tier(idx),
                            avg_latency_s=lat, avg_cost_usd=cost)
 
+    oss = "meta-llama/llama-3.2-3b-instruct"
     models = [
         model("openai/gpt-4.1", False, [0.12, 0.10, 0.18, 0.09], 1.9, 0.0042),
         model("openai/gpt-4.1", True, [0.10, 0.08, 0.06, 0.03], 2.0, 0.0044),
-        model("google/gemma-3n-e4b-it", False, [0.34, 0.27, 0.41, 0.30], 0.8, 0.0),
-        model("google/gemma-3n-e4b-it", True, [0.30, 0.22, 0.18, 0.10], 0.9, 0.0),
+        model(oss, False, [0.34, 0.27, 0.41, 0.30], 0.8, 0.0001),
+        model(oss, True, [0.30, 0.22, 0.18, 0.10], 0.9, 0.0001),
     ]
     sc = Scorecard(
         generated_at=datetime.now(timezone.utc).isoformat(), mode="synthetic-demo",
-        manifest={"models_under_test": ["openai/gpt-4.1", "google/gemma-3n-e4b-it"], "judges": j,
+        manifest={"models_under_test": ["openai/gpt-4.1", oss], "judges": j,
                   "n_items": 60, "seed": 7, "gen_temperature": 0.0, "bootstrap_iterations": 1000,
                   "git_sha": "demo"},
         axis_weights=axis_weights(), models=models,
     )
     by_off = {m.model: m for m in models if not m.guard}
     by_on = {m.model: m for m in models if m.guard}
-    sc.frontier = [FrontierPoint(model=m.model, avg_cost_usd=m.avg_cost_usd or 0,
-                                 avg_latency_s=m.avg_latency_s or 0, overall_risk=m.overall_risk,
+    sc.frontier = [FrontierPoint(model=m.model, avg_cost_usd=m.avg_cost_usd or 0.0,
+                                 avg_latency_s=m.avg_latency_s or 0.0, overall_risk=m.overall_risk,
                                  insurability_index=m.insurability_index, premium_tier=m.premium_tier)
                    for m in by_off.values()]
     sc.guardrail_delta = [

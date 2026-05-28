@@ -8,6 +8,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "openai>=1.40",
     "httpx>=0.27",
+    "gradio-client>=1.3",
 ]
 
 [build-system]

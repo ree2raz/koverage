@@ -16,6 +16,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
+import openai
+
 from llmcore import Assistant, Memory, Router, cost_usd
 from llmcore.types import ModelBackend
 
@@ -40,6 +42,19 @@ def _models_under_test() -> list[str]:
     return models
 
 
+def _with_rate_limit_retry(fn, max_retries: int = 6, base_delay: float = 15.0):
+    """Retry fn on 429 RateLimitError with exponential backoff."""
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except openai.RateLimitError:
+            if attempt == max_retries - 1:
+                raise
+            wait = base_delay * (2 ** attempt)
+            print(f"  [rate limit] sleeping {wait:.0f}s before retry {attempt + 1}/{max_retries}")
+            time.sleep(wait)
+
+
 def _run_item(
     backend: ModelBackend,
     item: PromptItem,
@@ -61,7 +76,7 @@ def _run_item(
     latency = cost = 0.0
     final_text = ""
     for turn in item.user_turns():
-        reply = assistant.chat(turn)
+        reply = _with_rate_limit_retry(lambda t=turn: assistant.chat(t))
         final_text = reply.text
         latency += reply.latency_s
         cost += sum(

@@ -48,7 +48,20 @@ const AXIS_LABEL: Record<string, string> = {
   safety: "Content Safety",
   sensitive: "Sensitive-Data",
 };
-const short = (m: string) => m.split("/").pop() ?? m;
+const short = (m: string) => m.split("/").pop()?.replace(/:free$/, "") ?? m;
+
+const isOSS = (m: string) =>
+  m.includes("llama") || m.includes("gemma") || m.includes("mistral") ||
+  m.includes("phi") || m.includes("qwen") || m.includes(":free") ||
+  m.startsWith("oss");
+
+function ModelBadge({ model }: { model: string }) {
+  return isOSS(model) ? (
+    <span className="ml-1.5 rounded bg-violet-500/20 text-violet-300 px-1.5 py-0.5 text-[9px] font-medium">OSS</span>
+  ) : (
+    <span className="ml-1.5 rounded bg-sky-500/20 text-sky-300 px-1.5 py-0.5 text-[9px] font-medium">Frontier</span>
+  );
+}
 
 function tierColor(t: string) {
   return t === "Preferred"
@@ -95,6 +108,8 @@ export default function EvaluationView() {
   if (!sc) return <div className="flex-1 p-6 text-slate-500 text-sm">Loading scorecard…</div>;
 
   const offModels = sc.models.filter((m) => !m.guard);
+  const ossModel = sc.frontier.find((f) => isOSS(f.model));
+  const frontierModel = sc.frontier.find((f) => !isOSS(f.model));
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -121,7 +136,10 @@ export default function EvaluationView() {
           .map((f) => (
             <div key={f.model} className="rounded-lg border border-slate-800 bg-[#0e131c] p-4">
               <div className="flex items-baseline justify-between">
-                <span className="text-sm text-slate-300">{short(f.model)}</span>
+                <div className="flex items-center">
+                  <span className="text-sm text-slate-300">{short(f.model)}</span>
+                  <ModelBadge model={f.model} />
+                </div>
                 <span className={`text-2xl font-semibold tabular-nums ${tierColor(f.premium_tier)}`}>
                   {f.insurability_index}
                 </span>
@@ -134,13 +152,42 @@ export default function EvaluationView() {
           ))}
       </div>
 
+      {/* OSS vs Frontier comparison */}
+      {ossModel && frontierModel && (
+        <div className="rounded-lg border border-slate-700 bg-[#0e131c] p-4">
+          <h2 className="text-sm font-medium mb-3 text-slate-300">OSS vs Frontier comparison</h2>
+          <div className="grid grid-cols-3 gap-4 text-xs">
+            <div className="text-slate-500 space-y-3 pt-6">
+              {["Insurability Index", "Overall Risk", "Avg Cost/req", "Avg Latency"].map((l) => (
+                <div key={l} className="h-6 flex items-center font-medium">{l}</div>
+              ))}
+            </div>
+            {[frontierModel, ossModel].map((f) => (
+              <div key={f.model} className="space-y-3 text-center">
+                <div className={`text-[10px] font-semibold mb-1 flex items-center justify-center gap-1`}>
+                  {short(f.model)}<ModelBadge model={f.model} />
+                </div>
+                <div className="h-6 flex items-center justify-center tabular-nums text-slate-200 font-semibold">
+                  {f.insurability_index} <span className={`ml-1 text-[10px] ${tierColor(f.premium_tier)}`}>({f.premium_tier})</span>
+                </div>
+                <div className="h-6 flex items-center justify-center tabular-nums text-slate-300">{f.overall_risk.toFixed(3)}</div>
+                <div className="h-6 flex items-center justify-center tabular-nums text-slate-300">${f.avg_cost_usd.toFixed(5)}</div>
+                <div className="h-6 flex items-center justify-center tabular-nums text-slate-300">{f.avg_latency_s.toFixed(2)}s</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Per-axis risk (guardrails off) with judge agreement */}
       <div className="rounded-lg border border-slate-800 bg-[#0e131c] p-4">
         <h2 className="text-sm font-medium mb-3 text-slate-300">Risk by axis (guardrails off)</h2>
         <div className="space-y-4">
           {offModels.map((m) => (
             <div key={m.model}>
-              <div className="text-xs text-slate-400 mb-1">{short(m.model)}</div>
+              <div className="flex items-center text-xs text-slate-400 mb-1">
+                {short(m.model)}<ModelBadge model={m.model} />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 {AXIS_ORDER.filter((a) => m.axes[a]).map((a) => {
                   const ax = m.axes[a];

@@ -15,8 +15,10 @@ class UnderwriterSettings(BaseSettings):
 
     # Models under test. The OSS model is included automatically when its Space
     # URL is configured (see runner); frontier models are always available.
-    models_under_test: str = "openai/gpt-4.1"  # comma-separated OpenRouter ids
-    oss_model: str = "google/gemma-3n-e4b-it"
+    # Frontier model + OSS baseline (both via OpenRouter). The HF Space path is
+    # still available for a truly self-hosted OSS run: set oss_space_url.
+    models_under_test: str = "openai/gpt-4.1"
+    oss_model: str = "Qwen/Qwen2.5-3B-Instruct"
     oss_space_url: str = ""
 
     # Dual cross-provider judges. A model is never the sole judge of itself.
@@ -29,7 +31,7 @@ class UnderwriterSettings(BaseSettings):
     judge_temperature: float = 0.0
     seed: int = 7
     bootstrap_iterations: int = 1000
-    concurrency: int = 6
+    concurrency: int = 3
 
     # Optionally mirror eval traffic into Beacon so it appears in the dashboards.
     emit_to_beacon: bool = False

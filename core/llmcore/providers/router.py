@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from ..catalog import CATALOG, ModelInfo, get_model
 from ..config import CoreSettings, settings as default_settings
+from .hf_space import HFSpaceBackend
 from .openai_compatible import OpenAICompatibleBackend
 
 
@@ -46,12 +47,8 @@ class Router:
                 },
             )
         if info.gateway == "oss":
-            # The HF Space exposes an OpenAI-compatible shim (see beacon/underwriter
-            # wiring); if it does not, an HFSpaceBackend adapter is swapped in here.
-            return OpenAICompatibleBackend(
-                provider="oss",
-                model=info.id,
-                base_url=self.settings.oss_space_url,
-                api_key="EMPTY",
+            return HFSpaceBackend(
+                space_url=self.settings.oss_space_url,
+                model_id=info.id,
             )
         raise ValueError(f"no gateway configured for model {model_id!r}")

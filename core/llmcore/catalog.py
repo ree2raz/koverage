@@ -9,8 +9,8 @@ One catalog powers three things:
 Prices are USD per 1,000,000 tokens and are *indicative* — they drift, so they
 live in exactly one place. All hosted models are reached through OpenRouter
 (one key, many providers), which is how we satisfy "multi-provider support"
-without N separate integrations. The OSS model is self-hosted (HF Space), so it
-has no per-token price; its cost is GPU-time, handled separately.
+without N separate integrations. The OSS model (Llama 3.2) is also served
+via OpenRouter's free tier; the HF Space entry is kept for the self-hosted path.
 """
 
 from __future__ import annotations
@@ -89,15 +89,26 @@ CATALOG: dict[str, ModelInfo] = {
             completion_usd_per_1m=10.00,
             context_tokens=131_072,
         ),
-        # Self-hosted open-source model (HF Space, ZeroGPU). Cost is GPU-time,
-        # not per-token; see Beacon cost notes. Reached via the "oss" gateway.
+        # Open-source model served via OpenRouter — OSS baseline for Underwriter.
         ModelInfo(
-            id="google/gemma-3n-e4b-it",
-            label="Gemma 3n E4B (self-hosted)",
+            id="meta-llama/llama-3.2-3b-instruct",
+            label="Llama 3.2 3B (OSS)",
+            provider="oss",
+            gateway="openrouter",
+            prompt_usd_per_1m=0.015,
+            completion_usd_per_1m=0.025,
+            context_tokens=131_072,
+            notes="Meta Llama 3.2 3B via OpenRouter.",
+        ),
+        # Self-hosted OSS model on HF Space ZeroGPU. Reached via the "oss" gateway
+        # (HFSpaceBackend → Gradio /eval API). Cost is GPU-time, not per-token.
+        ModelInfo(
+            id="Qwen/Qwen2.5-3B-Instruct",
+            label="Qwen2.5 3B (self-hosted)",
             provider="oss",
             gateway="oss",
-            context_tokens=32_000,
-            notes="Self-hosted on Hugging Face ZeroGPU; cost measured as GPU-seconds.",
+            context_tokens=32_768,
+            notes="Qwen2.5-3B-Instruct on HF Space ZeroGPU; cost measured as GPU-seconds.",
         ),
     ]
 }

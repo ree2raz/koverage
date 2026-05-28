@@ -1,13 +1,13 @@
 # Beacon — Architecture Notes
 
-Beacon is a drop-in LLM-observability pipeline: an SDK captures inference
+Beacon is a drop-in LLM observability pipeline: an SDK captures inference
 metadata at the call site, ships it without blocking the caller, and an
 event-driven pipeline validates, fans out, and persists it for dashboards and
 trace inspection.
 
 ```
 React (Vite)            Chat gateway (FastAPI)            Ingestion (FastAPI)         Worker
- Chat · Dashboards  ──▶  /chat  SSE stream         ──▶    POST /v1/ingest      ──▶    consume group
+ Chat · Dashboards  ──▶  /chat  SSE stream         ──▶    POST /v1/ingest      ──▶    consumer group
  list/resume/cancel      multi-provider (OpenRouter)      validate + x-api-key        idempotent upsert
         ▲                instrumented by llmobs SDK ──┐   produce → Redpanda, 202     poison → DLQ
         │ read API                                    │            │                       │
@@ -17,6 +17,7 @@ React (Vite)            Chat gateway (FastAPI)            Ingestion (FastAPI)   
 ```
 
 ## Ingestion flow
+
 1. The **gateway** makes an LLM call; the **llmobs SDK** wraps it in a `trace()` span.
 2. The span captures metadata — model, provider, latency, **TTFT**, tokens, cost,
    status — **redacts PII in-process**, builds previews, and `emit()`s the event
@@ -26,14 +27,15 @@ React (Vite)            Chat gateway (FastAPI)            Ingestion (FastAPI)   
    **produces to Redpanda** keyed by `request_id`, returning **202** at once.
    Unparseable events are routed to a **DLQ** rather than failing the batch.
 5. The **worker** consumes the topic, sets `ingested_at`, and writes to Postgres
-   with `INSERT … ON CONFLICT (request_id) DO NOTHING`. It commits the Kafka
-   offset only **after** the DB write (at-least-once). Poison messages → DLQ.
+   with `INSERT … ON CONFLICT (request_id) DO NOTHING`. Commits the Kafka offset
+   only **after** the DB write (at-least-once). Poison messages → DLQ.
 
 Chat state (`conversations`, `messages`) is written **synchronously by the
 gateway** — it must be exact for resume/cancel. Observability (`inference_logs`)
 flows the async path and is best-effort; losing a log never corrupts a chat.
 
 ## Logging strategy
+
 - **Capture at the call site, never on the critical path.** The SDK only enqueues;
   a daemon thread does the I/O. The model's blocking stream itself runs in a worker
   thread bridged to async, so one slow generation can't stall the event loop.
@@ -45,6 +47,7 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
 - **Head-based sampling** (`sample_rate`) for volume control.
 
 ## Scaling considerations
+
 - **Stateless gateway and ingestion** scale horizontally; the event bus absorbs
   bursts so ingestion latency stays flat under load.
 - **Redpanda partitions + consumer groups** scale the worker; `request_id` keying
@@ -58,6 +61,7 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
 - **Bounded SDK queue + sampling** cap the client-side memory and egress cost.
 
 ## Failure-handling assumptions
+
 - **Logging must never break or slow chat.** SDK failures degrade: retry with
   exponential backoff + jitter → **circuit breaker** opens after N consecutive
   failures → **drop-with-counter** once the bounded queue overflows. Every drop is
@@ -70,19 +74,51 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
 - **Cancellation** → the gateway stops streaming, persists the partial answer, and
   the span records `status=cancelled`.
 
-## Schema-design decisions
-- **Two write paths by guarantee** (synchronous chat state vs async observability),
-  as above — the core tradeoff, made explicit.
+## Schema design decisions
+
+- **Two write paths by guarantee** (synchronous chat state vs async observability) —
+  the core tradeoff, made explicit.
 - **Previews, not raw content.** The observability path stores only redacted,
   truncated previews; full content lives only in `messages` (the chat record).
 - **`request_id` UNIQUE** is the idempotency key threaded end-to-end.
 - **JSONB escape hatches** (`meta`, `redaction_counts`) absorb provider-specific
   fields without migrations.
 - **Numeric(12,6) cost** avoids float drift on money.
-- Migrations via **Alembic** (`alembic upgrade head`); `python -m beacon.db.init`
-  is the one-step dev shortcut.
+- Migrations via **Alembic** (`alembic upgrade head`).
+
+## What we observed in production
+
+Running the full stack end-to-end surfaced several non-obvious issues that are
+worth documenting as institutional knowledge:
+
+**Postgres NUMERIC → JSON string bug.** `psycopg3` returns `decimal.Decimal` for
+`NUMERIC` columns; FastAPI's default JSON encoder serializes these as strings, not
+numbers. TypeScript received `"0.00420"` and `.toFixed()` threw at runtime, blanking
+the UI. Fixed in `read.py` with a `_coerce()` helper that converts `Decimal → float`
+before serialization. Lesson: always test the full round-trip to the UI, not just
+the SQL query.
+
+**SSE silent failure on DB errors.** If the database was unavailable, `chat_stream`
+raised before its first `yield`, producing an HTTP 200 with an empty body. The
+browser's `EventSource` saw no events and no error — the UI just hung silently.
+Fixed by wrapping the entire generator body in `try/except` that yields an `error`
+SSE frame. Lesson: async generators need top-level error handling; exceptions before
+the first yield are invisible to the consumer.
+
+**Environment variables not reaching Docker containers.** `${VAR:-}` in Compose
+reads from the shell environment at parse time, not from `.env`. Secrets in `.env`
+were silently empty inside containers. Fixed with `env_file: ../.env` on every
+app service, combined with `environment:` overrides for Docker-internal hostnames.
+Lesson: `env_file` is the correct pattern for file-based secrets; variable
+substitution in Compose is for shell-level overrides only.
+
+**Two-stage Dockerfile broke editable installs.** Copying `site-packages` between
+stages fails because `.pth` files for editable installs point to absolute source
+paths that don't exist in the second stage. Fixed with a single-stage Dockerfile
+using a uv virtualenv and `ENV PATH="/app/.venv/bin:$PATH"`.
 
 ## What I'd improve with more time
+
 - ClickHouse analytics path (above) for real high-volume percentiles.
 - True stream cancellation (abort the upstream HTTP response, not just stop reading).
 - Exactly-once into Postgres via a transactional outbox / dedupe table with TTL.
