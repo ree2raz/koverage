@@ -103,8 +103,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    command: >
-      sh -c "cd beacon && alembic upgrade head"
+    working_dir: /app/beacon
+    command: alembic upgrade head
     environment:
       <<: *app-env
     depends_on:
@@ -128,7 +128,7 @@ services:
       redpanda:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
+      test: ["CMD-SHELL", "/app/.venv/bin/python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\" 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -147,7 +147,7 @@ services:
       redpanda:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8088/healthz')\""]
+      test: ["CMD-SHELL", "/app/.venv/bin/python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8088/healthz')\" 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
