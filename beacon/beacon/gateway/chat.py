@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import threading
 from collections.abc import AsyncIterator, Callable, Iterator
 from typing import Any
@@ -29,6 +30,8 @@ from pydantic import BaseModel
 from ..db.base import SessionLocal
 from . import conversations as convo_repo
 from .obs import get_obs
+
+log = logging.getLogger("beacon.gateway")
 
 SYSTEM_PROMPT = (
     "You are a helpful, honest, and careful assistant. Hold a natural multi-turn "
@@ -100,83 +103,91 @@ async def chat_stream(req: ChatRequest) -> AsyncIterator[dict]:
     model = req.model or _router.settings.default_model
     obs = get_obs()
 
-    async with SessionLocal() as session:
-        # 1. conversation + user message
-        if req.conversation_id:
-            convo = await convo_repo.get_conversation(session, req.conversation_id)
-            if convo is None:
-                yield _sse("error", {"detail": "conversation not found"})
-                return
-            if convo.status != "active":
+    if not _router.settings.openrouter_api_key:
+        yield _sse("error", {"detail": "OPENROUTER_API_KEY is not set — add it to .env and restart"})
+        return
+
+    try:
+        async with SessionLocal() as session:
+            # 1. conversation + user message
+            if req.conversation_id:
+                convo = await convo_repo.get_conversation(session, req.conversation_id)
+                if convo is None:
+                    yield _sse("error", {"detail": "conversation not found"})
+                    return
+                if convo.status != "active":
+                    await convo_repo.set_status(session, convo.id, "active")
+            else:
+                title = req.message[:60] or "New conversation"
+                convo = await convo_repo.create_conversation(
+                    session, model=model, session_id=req.session_id, title=title
+                )
+
+            history = await convo_repo.get_messages(session, convo.id)
+            await convo_repo.add_message(session, convo_id=convo.id, role="user", content=req.message)
+
+            yield _sse("meta", {"conversation_id": convo.id, "model": model})
+
+            # 2. short-term memory from stored history + this turn
+            mem = Memory(SYSTEM_PROMPT)
+            mem.load([CoreMessage(role=Role(m.role), content=m.content) for m in history])
+            mem.add_user(req.message)
+
+            # 3. stream
+            backend = _router.backend_for(model)
+            provider = backend.provider
+            parts: list[str] = []
+            usage = None
+            status = "ok"
+
+            def gen() -> Iterator[StreamPiece]:
+                return backend.stream_events(mem.context(), temperature=_router.settings.temperature,
+                                             max_tokens=_router.settings.max_tokens)
+
+            with trace(obs, conversation_id=convo.id, provider=provider, model=model,
+                       session_id=req.session_id) as span:
+                span.set_input(req.message)
+                try:
+                    async for piece in _aiter_sync(gen):
+                        if _take_cancel(convo.id):
+                            status = "cancelled"
+                            break
+                        if piece.delta:
+                            span.mark_first_token()
+                            parts.append(piece.delta)
+                            yield _sse("token", {"text": piece.delta})
+                        if piece.usage:
+                            usage = piece.usage
+                except Exception as exc:  # noqa: BLE001
+                    status = "error"
+                    span.set_status("error", type(exc).__name__)
+                    yield _sse("error", {"detail": str(exc)})
+
+                text = "".join(parts)
+                prompt_tokens = usage.prompt_tokens if usage else _approx_tokens(req.message)
+                completion_tokens = usage.completion_tokens if usage else _approx_tokens(text)
+                cost = cost_usd(model, prompt_tokens, completion_tokens)
+                span.set_status(status)
+                span.set_usage(prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, cost_usd=cost)
+                span.set_output(text)
+
+            # 4. persist assistant message (even partial, on cancel)
+            if text:
+                await convo_repo.add_message(
+                    session, convo_id=convo.id, role="assistant", content=text,
+                    token_count=completion_tokens,
+                )
+            if status == "cancelled":
                 await convo_repo.set_status(session, convo.id, "active")
-        else:
-            title = req.message[:60] or "New conversation"
-            convo = await convo_repo.create_conversation(
-                session, model=model, session_id=req.session_id, title=title
-            )
 
-        history = await convo_repo.get_messages(session, convo.id)
-        await convo_repo.add_message(session, convo_id=convo.id, role="user", content=req.message)
-
-        yield _sse("meta", {"conversation_id": convo.id, "model": model})
-
-        # 2. short-term memory from stored history + this turn
-        mem = Memory(SYSTEM_PROMPT)
-        mem.load([CoreMessage(role=Role(m.role), content=m.content) for m in history])
-        mem.add_user(req.message)
-
-        # 3. stream
-        backend = _router.backend_for(model)
-        provider = backend.provider
-        parts: list[str] = []
-        usage = None
-        status = "ok"
-
-        def gen() -> Iterator[StreamPiece]:
-            return backend.stream_events(mem.context(), temperature=_router.settings.temperature,
-                                         max_tokens=_router.settings.max_tokens)
-
-        with trace(obs, conversation_id=convo.id, provider=provider, model=model,
-                   session_id=req.session_id) as span:
-            span.set_input(req.message)
-            try:
-                async for piece in _aiter_sync(gen):
-                    if _take_cancel(convo.id):
-                        status = "cancelled"
-                        break
-                    if piece.delta:
-                        span.mark_first_token()
-                        parts.append(piece.delta)
-                        yield _sse("token", {"text": piece.delta})
-                    if piece.usage:
-                        usage = piece.usage
-            except Exception as exc:  # noqa: BLE001
-                status = "error"
-                span.set_status("error", type(exc).__name__)
-                yield _sse("error", {"detail": str(exc)})
-
-            text = "".join(parts)
-            prompt_tokens = usage.prompt_tokens if usage else _approx_tokens(req.message)
-            completion_tokens = usage.completion_tokens if usage else _approx_tokens(text)
-            cost = cost_usd(model, prompt_tokens, completion_tokens)
-            span.set_status(status)
-            span.set_usage(prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, cost_usd=cost)
-            span.set_output(text)
-
-        # 4. persist assistant message (even partial, on cancel)
-        if text:
-            await convo_repo.add_message(
-                session, convo_id=convo.id, role="assistant", content=text,
-                token_count=completion_tokens,
-            )
-        if status == "cancelled":
-            await convo_repo.set_status(session, convo.id, "active")
-
-        yield _sse("done", {
-            "conversation_id": convo.id,
-            "status": status,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "cost_usd": cost,
-            "request_id": span.request_id,
-        })
+            yield _sse("done", {
+                "conversation_id": convo.id,
+                "status": status,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "cost_usd": cost,
+                "request_id": span.request_id,
+            })
+    except Exception as exc:  # noqa: BLE001 — surface setup/DB errors to the UI
+        log.exception("unhandled error in chat_stream: %s", exc)
+        yield _sse("error", {"detail": f"{type(exc).__name__}: {exc}"})
