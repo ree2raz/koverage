@@ -15,14 +15,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from llmcore import CATALOG
-from prometheus_client import Counter, make_asgi_app
+from prometheus_client import Counter, Histogram, make_asgi_app
 from sse_starlette.sse import EventSourceResponse
 
+from ..logging_config import configure_logging
 from ..settings import settings
 from .chat import ChatRequest, chat_stream, request_cancel
 from .read import router as read_router
 
+configure_logging()
+
 CHATS = Counter("beacon_chats_total", "Chat turns started", ["model"])
+CHAT_LATENCY = Histogram(
+    "beacon_chat_latency_seconds",
+    "End-to-end chat stream latency",
+    ["model"],
+    buckets=[0.5, 1, 2, 5, 10, 30, 60],
+)
 
 
 @asynccontextmanager

@@ -22,7 +22,9 @@ from ..db.base import SessionLocal
 from ..db.models import InferenceLog
 from ..settings import settings
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s worker: %(message)s")
+from ..logging_config import configure_logging
+
+configure_logging()
 log = logging.getLogger("beacon.worker")
 
 

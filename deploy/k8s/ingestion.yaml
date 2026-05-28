@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+  namespace: ollive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingestion
+  template:
+    metadata:
+      labels:
+        app: ingestion
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8088"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: ingestion
+          image: ollive-platform:latest
+          command: ["uvicorn", "beacon.ingestion.main:app", "--host", "0.0.0.0", "--port", "8088"]
+          envFrom:
+            - secretRef:
+                name: ollive-secrets
+          env:
+            - name: REDPANDA_BROKERS
+              value: redpanda:29092
+          ports:
+            - containerPort: 8088
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8088
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion
+  namespace: ollive
+spec:
+  selector:
+    app: ingestion
+  ports:
+    - port: 8088

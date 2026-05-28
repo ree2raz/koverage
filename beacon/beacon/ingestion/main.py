@@ -17,7 +17,10 @@ from llmobs.schema import InferenceEvent
 from prometheus_client import Counter, make_asgi_app
 
 from ..bus import Producer
+from ..logging_config import configure_logging
 from ..settings import settings
+
+configure_logging()
 
 ACCEPTED = Counter("beacon_ingest_accepted_total", "Valid events produced to the bus")
 REJECTED = Counter("beacon_ingest_rejected_total", "Invalid events routed to DLQ")
