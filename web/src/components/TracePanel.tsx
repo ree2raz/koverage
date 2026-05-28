@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { InferenceLog } from "../types";
 
-function StatusBadge({ status }: { status: string }) {
-  const cls =
-    status === "error"
-      ? "bg-rose-500/20 text-rose-300"
-      : status === "cancelled"
-        ? "bg-amber-500/20 text-amber-300"
-        : "bg-emerald-500/20 text-emerald-300";
-  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>{status}</span>;
+const short = (m: string) => m.split("/").pop() ?? m;
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] uppercase tracking-wide text-slate-600">{label}</span>
+      <span className="text-xs tabular-nums text-slate-200">{value}</span>
+    </div>
+  );
 }
 
 export default function TracePanel({
@@ -27,40 +28,66 @@ export default function TracePanel({
   }, [conversationId, refreshKey]);
 
   if (logs.length === 0)
-    return <p className="text-xs text-slate-600 px-1">No inference logs yet for this conversation.</p>;
+    return <p className="text-xs text-slate-600 px-1">No inference logs yet.</p>;
 
   const maxLatency = Math.max(...logs.map((l) => l.latency_ms), 1);
 
   return (
     <div className="space-y-2">
-      {logs.map((l) => {
+      {logs.map((l, i) => {
         const ttftPct = l.latency_ms ? Math.min(100, (l.ttft_ms / l.latency_ms) * 100) : 0;
-        const widthPct = (l.latency_ms / maxLatency) * 100;
+        const barPct = (l.latency_ms / maxLatency) * 100;
+        const latS = (l.latency_ms / 1000).toFixed(2);
+        const ttftMs = l.ttft_ms ?? 0;
         const redactions = Object.entries(l.redaction_counts || {});
+        const statusColor =
+          l.status === "error"
+            ? "text-rose-400"
+            : l.status === "cancelled"
+              ? "text-amber-400"
+              : "text-emerald-400";
+
         return (
-          <div key={l.request_id} className="rounded-md border border-slate-800 bg-slate-900/40 p-2.5">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <div className="flex items-center gap-2">
-                <StatusBadge status={l.status} />
-                <span className="text-slate-300">{l.model}</span>
-                <span className="text-slate-600">{l.provider}</span>
+          <div key={l.request_id} className="rounded-md border border-slate-800 bg-slate-900/50 p-3 space-y-2.5">
+            {/* turn header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-medium text-slate-500">#{i + 1}</span>
+                <span className="text-xs font-medium text-slate-300">{short(l.model)}</span>
               </div>
-              <div className="flex items-center gap-3 text-slate-400 tabular-nums">
-                <span>{l.latency_ms} ms</span>
-                <span title="time to first token">TTFT {l.ttft_ms} ms</span>
-                <span>{l.total_tokens} tok</span>
-                <span>${l.cost_usd?.toFixed?.(6) ?? l.cost_usd}</span>
+              <span className={`text-[10px] font-semibold uppercase ${statusColor}`}>{l.status}</span>
+            </div>
+
+            {/* waterfall bar: amber = TTFT, indigo = generation */}
+            <div className="space-y-1">
+              <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                <div style={{ width: `${barPct}%` }} className="h-full flex">
+                  <div className="h-full bg-amber-400" style={{ width: `${ttftPct}%` }} />
+                  <div className="h-full bg-indigo-500 flex-1" />
+                </div>
+              </div>
+              <div className="flex gap-3 text-[9px] text-slate-600">
+                <span className="flex items-center gap-1"><span className="inline-block w-2 h-1.5 rounded-sm bg-amber-400" />TTFT</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-2 h-1.5 rounded-sm bg-indigo-500" />generation</span>
               </div>
             </div>
-            {/* latency waterfall: amber = time-to-first-token, indigo = generation */}
-            <div className="h-2 rounded-full bg-slate-800 overflow-hidden" style={{ width: `${widthPct}%` }}>
-              <div className="h-full bg-amber-400" style={{ width: `${ttftPct}%`, float: "left" }} />
-              <div className="h-full bg-indigo-500" style={{ width: `${100 - ttftPct}%`, float: "left" }} />
+
+            {/* key metrics grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-800 pt-2">
+              <Stat label="TTFT" value={ttftMs ? `${ttftMs} ms` : "—"} />
+              <Stat label="Total latency" value={`${latS} s`} />
+              <Stat label="Tokens" value={`${l.prompt_tokens ?? 0}↑ ${l.completion_tokens ?? 0}↓`} />
+              <Stat label="Cost" value={`$${(l.cost_usd ?? 0).toFixed(5)}`} />
             </div>
+
+            {/* provider */}
+            <div className="text-[10px] text-slate-600 truncate">{l.provider} · {l.model}</div>
+
+            {/* redaction badges */}
             {redactions.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-800">
                 {redactions.map(([kind, n]) => (
-                  <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-[10px]">
+                  <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-[9px]">
                     redacted {kind} ×{n}
                   </span>
                 ))}
