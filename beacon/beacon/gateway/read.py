@@ -7,6 +7,7 @@ path swaps these for ClickHouse rollups behind the same endpoints.
 
 from __future__ import annotations
 
+import decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,8 +20,15 @@ from . import conversations as convo_repo
 router = APIRouter(prefix="/api", tags=["read"])
 
 
+def _coerce(v: Any) -> Any:
+    """Postgres NUMERIC → Decimal → float so JSON stays numeric, not string."""
+    if isinstance(v, decimal.Decimal):
+        return float(v)
+    return v
+
+
 def _rows(result: Any) -> list[dict]:
-    return [dict(r._mapping) for r in result]
+    return [{k: _coerce(v) for k, v in r._mapping.items()} for r in result]
 
 
 @router.get("/conversations")
