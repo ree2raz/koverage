@@ -3,48 +3,29 @@
 #   cp .env.example .env          # fill OPENROUTER_API_KEY
 #   docker compose -f deploy/docker-compose.yml up --build
 #
-# Services:
-#   postgres         — Postgres 16 (chat state + inference logs)
-#   redpanda         — Kafka-API event bus
-#   redpanda-init    — creates topics (one-shot)
-#   redpanda-console — topic browser UI at :8080
-#   migrate          — runs alembic upgrade head (one-shot)
-#   gateway          — chat + read API at :8000
-#   ingestion        — event intake at :8088
-#   worker           — Redpanda → Postgres consumer
-#   web              — React SPA + API proxy at :5173
+# env_file loads ../env (= platform/.env) directly into every app container
+# so secrets never need to be exported to the shell first.
+# Docker-internal hostnames (postgres, redpanda, ingestion) are set via
+# `environment:` which takes precedence over env_file values.
 
 name: ollive
-
-# ── shared env forwarded to all app services ─────────────────────────────────
-x-app-env: &app-env
-  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-  OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
-  DEFAULT_MODEL: ${DEFAULT_MODEL:-openai/gpt-4.1}
-  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-  OSS_SPACE_URL: ${OSS_SPACE_URL:-}
-  DATABASE_URL: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
-  REDPANDA_BROKERS: redpanda:29092
-  INGEST_API_KEY: ${INGEST_API_KEY:-dev-ingest-key}
-  INGEST_URL: http://ingestion:8088/v1/ingest
-  CORS_ORIGINS: "http://localhost:5173,http://web:5173"
 
 services:
   # ── datastores ───────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    env_file: ../.env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-beacon}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beacon}
-      POSTGRES_DB: ${POSTGRES_DB:-beacon}
+      POSTGRES_USER: beacon
+      POSTGRES_PASSWORD: beacon
+      POSTGRES_DB: beacon
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beacon} -d ${POSTGRES_DB:-beacon}"]
+      test: ["CMD-SHELL", "pg_isready -U beacon -d beacon"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -105,8 +86,9 @@ services:
       dockerfile: Dockerfile
     working_dir: /app/beacon
     command: alembic upgrade head
+    env_file: ../.env
     environment:
-      <<: *app-env
+      DATABASE_URL: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,8 +100,12 @@ services:
       context: ..
       dockerfile: Dockerfile
     command: uvicorn beacon.gateway.main:app --host 0.0.0.0 --port 8000
+    env_file: ../.env
     environment:
-      <<: *app-env
+      DATABASE_URL: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
+      REDPANDA_BROKERS: redpanda:29092
+      INGEST_URL: http://ingestion:8088/v1/ingest
+      CORS_ORIGINS: "http://localhost:5173,http://web:5173"
     ports:
       - "8000:8000"
     depends_on:
@@ -139,8 +125,9 @@ services:
       context: ..
       dockerfile: Dockerfile
     command: uvicorn beacon.ingestion.main:app --host 0.0.0.0 --port 8088
+    env_file: ../.env
     environment:
-      <<: *app-env
+      REDPANDA_BROKERS: redpanda:29092
     ports:
       - "8088:8088"
     depends_on:
@@ -158,8 +145,10 @@ services:
       context: ..
       dockerfile: Dockerfile
     command: python -m beacon.worker.main
+    env_file: ../.env
     environment:
-      <<: *app-env
+      DATABASE_URL: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
+      REDPANDA_BROKERS: redpanda:29092
     depends_on:
       migrate:
         condition: service_completed_successfully
