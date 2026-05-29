@@ -26,7 +26,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         guard_options = (False,)
     scorecard, run_dir = run(suites=suites, n_per_suite=n, guard_options=guard_options)
     pdf = generate_pdf(scorecard, run_dir / "scorecard.pdf")
-    web = publish_scorecard(scorecard)
+    web = publish_scorecard(scorecard, pdf_path=pdf)
     print(f"PDF  → {pdf}\nweb  → {web}")
 
 
@@ -36,14 +36,14 @@ def cmd_demo(_: argparse.Namespace) -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "scorecard.json").write_text(sc.model_dump_json(indent=2))
     pdf = generate_pdf(sc, out / "scorecard.pdf")
-    web = publish_scorecard(sc)
+    web = publish_scorecard(sc, pdf_path=pdf)
     print(f"synthetic scorecard → {out/'scorecard.json'}\nPDF → {pdf}\nweb → {web}")
 
 
 def cmd_report(args: argparse.Namespace) -> None:
     sc = Scorecard.model_validate_json(Path(args.path).read_text())
     pdf = generate_pdf(sc, Path(args.path).with_suffix(".pdf"))
-    web = publish_scorecard(sc)
+    web = publish_scorecard(sc, pdf_path=pdf)
     print(f"PDF → {pdf}\nweb → {web}")
 
 

@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-Status = Literal["ok", "error", "cancelled"]
+Status = Literal["ok", "error", "cancelled", "refused"]
 
 
 def _utcnow() -> datetime:

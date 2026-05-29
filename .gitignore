@@ -25,3 +25,6 @@ postgres-data/
 .DS_Store
 .idea/
 .vscode/
+
+# Loom / recording scripts (personal prep notes)
+docs/loom/

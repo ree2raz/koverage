@@ -97,12 +97,23 @@ CATALOG: dict[str, ModelInfo] = {
         ),
         ModelInfo(
             id="Qwen/Qwen2.5-3B-Instruct",
-            label="Qwen2.5 3B (HF Space)",
+            label="Qwen2.5 3B (self-hosted)",
             provider="oss",
             gateway="oss",
             chat=True,
             context_tokens=32_768,
-            notes="Qwen2.5-3B-Instruct on HF Space ZeroGPU; cost in GPU-seconds.",
+            notes="Qwen2.5-3B-Instruct self-hosted; router picks Modal or HF Space transport.",
+        ),
+        ModelInfo(
+            id="qwen/qwen-2.5-7b-instruct",
+            label="Qwen2.5 7B (OpenRouter)",
+            provider="oss",
+            gateway="openrouter",
+            chat=False,
+            prompt_usd_per_1m=0.04,
+            completion_usd_per_1m=0.10,
+            context_tokens=131_072,
+            notes="OpenRouter fallback for OSS path when the HF Space is down.",
         ),
     ]
 }

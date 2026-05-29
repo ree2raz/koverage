@@ -8,6 +8,7 @@ Both modules build on this:
 from .assistant import Assistant, AssistantReply, Guardrail
 from .catalog import CATALOG, ModelInfo, chat_models, get_model, models_for_gateway
 from .config import CoreSettings, settings
+from .guardrails import REFUSAL_MESSAGE, DefaultGuardrail, build_guardrail
 from .memory import Memory
 from .pricing import cost_usd
 from .providers import OpenAICompatibleBackend, Router
@@ -18,6 +19,9 @@ __all__ = [
     "Assistant",
     "AssistantReply",
     "Guardrail",
+    "DefaultGuardrail",
+    "REFUSAL_MESSAGE",
+    "build_guardrail",
     "Memory",
     "Tool",
     "CALCULATOR",

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -19,7 +20,7 @@ from pathlib import Path
 import openai
 
 from llmcore import Assistant, Memory, Router, cost_usd
-from llmcore.types import ModelBackend
+from llmcore.types import Message, ModelBackend, Role
 
 from .config import axis_weights, settings
 from .datasets import EVAL_SYSTEM_PROMPT, PromptItem, load_cards, load_suites
@@ -37,9 +38,70 @@ def _git_sha() -> str:
 
 def _models_under_test() -> list[str]:
     models = [m.strip() for m in settings.models_under_test.split(",") if m.strip()]
-    if settings.oss_space_url:  # include the self-hosted OSS model only if reachable
-        models.append(settings.oss_model)
+    if settings.modal_oss_url or settings.oss_space_url:
+        # Run OSS FIRST. The first call doubles as the cold-start warm-up; by the
+        # time we move to frontier models, the OSS container's GPU is free for the
+        # keep-alive thread to maintain. If we ran OSS last, it would be cold by
+        # then and the run would race the GPU reload. (Router picks Modal or HF
+        # Space transport based on which env var is set; Modal wins if both.)
+        models.insert(0, settings.oss_model)
     return models
+
+
+def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0) -> threading.Event:
+    """Daemon that pings the OSS container every `interval_s` so the GPU host
+    doesn't reclaim it (HF Spaces ZeroGPU) or scale to zero (Modal) during the
+    long frontier passes. Returns a stop event the caller sets when the run
+    completes. No-op when OSS is not configured.
+    """
+    stop = threading.Event()
+    if not (settings.modal_oss_url or settings.oss_space_url):
+        return stop
+    try:
+        backend = router.backend_for(settings.oss_model)
+    except Exception:
+        return stop
+    if getattr(backend, "provider", "") != "oss":
+        return stop
+
+    def loop() -> None:
+        # immediate first ping — kicks the cold-start in parallel with run setup
+        while True:
+            try:
+                backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
+            except Exception:
+                pass  # best-effort; main thread's retries handle real failures
+            if stop.wait(interval_s):
+                return
+
+    threading.Thread(target=loop, daemon=True, name="oss-keepalive").start()
+    transport = type(backend).__name__.replace("Backend", "")  # "Modal" or "HFSpace"
+    print(
+        f"  [oss] routing {settings.oss_model} via {transport}; "
+        f"keep-alive every {interval_s:.0f}s"
+    )
+    return stop
+
+
+def _resolve_oss_backend(router: Router, model: str) -> tuple[str, ModelBackend]:
+    """For the HF-Space OSS model, ping the Space with a tiny prompt; if it raises
+    after the backend's own retries are exhausted, swap to the OpenRouter fallback
+    so the full eval still completes. No-op for non-OSS models.
+    """
+    backend = router.backend_for(model)
+    if getattr(backend, "provider", "") != "oss" or model != settings.oss_model:
+        return model, backend
+    try:
+        backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
+        return model, backend
+    except Exception as exc:
+        fb = settings.oss_fallback_model
+        print(
+            f"  [oss] HF Space '{model}' unreachable ({type(exc).__name__}); "
+            f"falling back to OpenRouter '{fb}' for this run",
+            flush=True,
+        )
+        return fb, router.backend_for(fb)
 
 
 def _with_rate_limit_retry(fn, max_retries: int = 6, base_delay: float = 15.0):
@@ -107,9 +169,14 @@ def run(
     run_dir.mkdir(parents=True, exist_ok=True)
     gen_f = (run_dir / "scores.jsonl").open("w")
 
+    # background keep-alive so the HF Space doesn't go cold mid-run
+    keepalive_stop = _spawn_oss_keepalive(router)
+
     results: list[ModelResult] = []
-    for model in models:
-        backend = router.backend_for(model)
+    resolved_models: list[str] = []
+    for original_model in models:
+        model, backend = _resolve_oss_backend(router, original_model)
+        resolved_models.append(model)
         for guard in guard_options:
             guardrail = build_guardrail() if guard else None
             scores: list[ItemScore] = []
@@ -140,8 +207,9 @@ def run(
                 f"risk={mr.overall_risk:.3f}  {time.perf_counter() - t0:.1f}s"
             )
     gen_f.close()
+    keepalive_stop.set()
 
-    scorecard = _build_scorecard(results, weights, ts, models, judges, items)
+    scorecard = _build_scorecard(results, weights, ts, resolved_models, judges, items)
     (run_dir / "scorecard.json").write_text(scorecard.model_dump_json(indent=2))
     _write_manifest(run_dir, scorecard)
     print(f"\nrun written → {run_dir}")

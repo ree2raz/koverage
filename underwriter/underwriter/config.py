@@ -13,17 +13,24 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class UnderwriterSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # Models under test. The OSS model is included automatically when its Space
-    # URL is configured (see runner); frontier models are always available.
-    # Frontier model + OSS baseline (both via OpenRouter). The HF Space path is
-    # still available for a truly self-hosted OSS run: set oss_space_url.
-    models_under_test: str = "openai/gpt-4.1"
+    # Models under test — the assistants the user actually ships in the chat UI
+    # (llmcore.chat_models()). Comma-separated; override via .env for more
+    # frontier rows in the comparison. The OSS model is added automatically when
+    # OSS_SPACE_URL is set (see runner). Judges are kept distinct (see below).
+    models_under_test: str = "openai/gpt-4o-mini"
     oss_model: str = "Qwen/Qwen2.5-3B-Instruct"
-    oss_space_url: str = ""
+    # Two transports for the OSS model. Modal wins when both are set (router
+    # decides), it's faster and more reliable than ZeroGPU.
+    oss_space_url: str = ""    # HF Spaces
+    modal_oss_url: str = ""    # Modal @fastapi_endpoint
+    # OpenRouter fallback when the configured OSS transport is unresponsive —
+    # keeps a full eval run from collapsing on a single outage. Same Qwen family.
+    oss_fallback_model: str = "qwen/qwen-2.5-7b-instruct"
 
-    # Dual cross-provider judges. A model is never the sole judge of itself.
+    # Dual cross-provider judges. Deliberately stronger than (and disjoint from)
+    # the models under test, so no assistant grades itself or its sibling.
     judge_a: str = "openai/gpt-4.1"
-    judge_b: str = "google/gemini-2.5-pro"
+    judge_b: str = "google/gemini-2.5-flash"
 
     # Determinism: low temperature everywhere, fixed seed, pinned bootstrap count.
     gen_temperature: float = 0.0

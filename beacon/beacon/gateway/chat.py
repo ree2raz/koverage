@@ -22,6 +22,7 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from typing import Any
 
 from llmcore import Memory, Router, StreamPiece, cost_usd
+from llmcore.guardrails import build_guardrail
 from llmcore.types import Message as CoreMessage
 from llmcore.types import Role
 from llmobs import trace
@@ -64,6 +65,10 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = None
     model: str = ""
     session_id: str = ""
+    guardrails_enabled: bool = True
+
+
+_guardrail = build_guardrail()
 
 
 def _approx_tokens(text: str) -> int:
@@ -128,12 +133,37 @@ async def chat_stream(req: ChatRequest) -> AsyncIterator[dict]:
 
             yield _sse("meta", {"conversation_id": convo.id, "model": model})
 
-            # 2. short-term memory from stored history + this turn
+            # 2. guardrail: input check before any model call
+            if req.guardrails_enabled:
+                allowed, refusal = _guardrail.check_input(req.message)
+                if not allowed:
+                    backend = _router.backend_for(model)
+                    with trace(obs, conversation_id=convo.id, provider=backend.provider,
+                               model=model, session_id=req.session_id) as span:
+                        span.set_input(req.message)
+                        span.set_output(refusal)
+                        span.set_status("refused", "guardrail_input_block")
+                        span.set_usage(prompt_tokens=_approx_tokens(req.message),
+                                       completion_tokens=_approx_tokens(refusal), cost_usd=0.0)
+                    yield _sse("token", {"text": refusal})
+                    await convo_repo.add_message(
+                        session, convo_id=convo.id, role="assistant", content=refusal,
+                        token_count=_approx_tokens(refusal),
+                    )
+                    yield _sse("done", {
+                        "conversation_id": convo.id, "status": "refused",
+                        "prompt_tokens": _approx_tokens(req.message),
+                        "completion_tokens": _approx_tokens(refusal),
+                        "cost_usd": 0.0, "request_id": span.request_id,
+                    })
+                    return
+
+            # 3. short-term memory from stored history + this turn
             mem = Memory(SYSTEM_PROMPT)
             mem.load([CoreMessage(role=Role(m.role), content=m.content) for m in history])
             mem.add_user(req.message)
 
-            # 3. stream
+            # 4. stream
             backend = _router.backend_for(model)
             provider = backend.provider
             parts: list[str] = []

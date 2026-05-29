@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Insurability Scorecard</title>
+<style>{{ css }}</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="title-row">
+    <div>
+      <h1>AI Insurability Scorecard</h1>
+      <div class="subtitle">Risk-priced evaluation across hallucination · bias · safety · sensitive-data axes</div>
+    </div>
+    <div class="meta">
+      {{ generated_date }}
+      {% if mode != 'live' %}<br><span class="badge warn">SYNTHETIC DEMO</span>{% endif %}
+    </div>
+  </div>
+  <div class="manifest">
+    <span><strong>Models:</strong> {{ manifest_models }}</span>
+    <span><strong>Judges:</strong> {{ manifest_judges }}</span>
+    <span><strong>N:</strong> {{ manifest.n_items }} prompts/model</span>
+    <span><strong>Seed:</strong> {{ manifest.seed }}</span>
+    <span><strong>Bootstraps:</strong> {{ manifest.bootstrap_iterations }}</span>
+    <span><strong>git:</strong> {{ manifest.git_sha }}</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi">
+    <div class="kpi-label">Best Insurability</div>
+    <div class="kpi-value">{{ kpi.best_index }}</div>
+    <div class="kpi-sub">{{ kpi.best_model }} · {{ kpi.best_tier }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Guardrail Uplift</div>
+    <div class="kpi-value">{{ kpi.guard_uplift }}</div>
+    <div class="kpi-sub">avg index gain (off → on)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Generations Scored</div>
+    <div class="kpi-value">{{ kpi.eval_cells }}</div>
+    <div class="kpi-sub">{{ kpi.n_prompts }} prompts × {{ kpi.n_passes }} passes ({{ kpi.n_models }} models, guard off+on)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Judge Agreement</div>
+    <div class="kpi-value">{{ kpi.kappa }}</div>
+    <div class="kpi-sub">Cohen's κ (mean across axes)</div>
+  </div>
+</section>
+
+<section class="panels">
+  <div class="panel">
+    <h2>Risk by axis (guardrails off)</h2>
+    <img src="{{ charts.risk }}" alt="risk by axis">
+  </div>
+  <div class="panel">
+    <h2>Insurability index (0–100)</h2>
+    <img src="{{ charts.index }}" alt="insurability index">
+  </div>
+  <div class="panel">
+    <h2>Guardrail risk reduction</h2>
+    <img src="{{ charts.guard }}" alt="guardrail delta">
+  </div>
+  <div class="panel">
+    <h2>Cost · latency · risk</h2>
+    <img src="{{ charts.frontier }}" alt="cost-latency-risk frontier">
+  </div>
+</section>
+
+<section class="callout">
+  <h3>Recommendation</h3>
+  <p>{{ recommendation }}</p>
+</section>
+
+<footer>
+  <strong>Threats to validity:</strong>
+  LLM-judge scores carry bias (especially self-preference when a judge grades its
+  own provider — see per-judge columns and Cohen's κ); N is modest, so CIs are
+  wide; prompts are English-only and indicative, not a certification.
+</footer>
+
+</body>
+</html>

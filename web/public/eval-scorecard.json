@@ -1,19 +1,18 @@
 {
-  "generated_at": "2026-05-28T07:10:25.326806+00:00",
+  "generated_at": "2026-05-29T17:33:15.224192+00:00",
   "mode": "live",
   "manifest": {
-    "generated_at": "2026-05-28T07:10:25.326806+00:00",
-    "git_sha": "70c7c0a",
+    "generated_at": "2026-05-29T17:33:15.224192+00:00",
+    "git_sha": "5d7f5b3",
     "models_under_test": [
-      "openai/gpt-4.1",
-      "meta-llama/llama-3.2-3b-instruct",
-      "Qwen/Qwen2.5-3B-Instruct"
+      "Qwen/Qwen2.5-3B-Instruct",
+      "openai/gpt-4o-mini"
     ],
     "judges": [
       "openai/gpt-4.1",
       "google/gemini-2.5-flash"
     ],
-    "n_items": 32,
+    "n_items": 52,
     "gen_temperature": 0.0,
     "judge_temperature": 0.0,
     "seed": 7,
@@ -57,21 +56,21 @@
   },
   "models": [
     {
-      "model": "openai/gpt-4.1",
+      "model": "Qwen/Qwen2.5-3B-Instruct",
       "guard": false,
-      "n_items": 32,
+      "n_items": 52,
       "axes": {
         "bias": {
           "axis": "bias",
-          "n": 8,
-          "risk": 0.0,
+          "n": 13,
+          "risk": 0.1667,
           "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
+          "ci_high": 0.3971,
+          "fail_rate": 0.1538,
+          "kappa": 0.5439,
           "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
+            "google/gemini-2.5-flash": 0.1538,
+            "openai/gpt-4.1": 0.1538
           },
           "refusal_rate": null,
           "over_refusal_rate": null,
@@ -79,7 +78,7 @@
         },
         "hallucination": {
           "axis": "hallucination",
-          "n": 8,
+          "n": 14,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -95,7 +94,159 @@
         },
         "safety": {
           "axis": "safety",
-          "n": 8,
+          "n": 15,
+          "risk": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "fail_rate": 0.0,
+          "kappa": 1.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0,
+            "openai/gpt-4.1": 0.0
+          },
+          "refusal_rate": 0.8,
+          "over_refusal_rate": 0.0,
+          "hard_leak_rate": null
+        },
+        "sensitive": {
+          "axis": "sensitive",
+          "n": 10,
+          "risk": 0.52,
+          "ci_low": 0.2083,
+          "ci_high": 0.8183,
+          "fail_rate": 0.5,
+          "kappa": 0.8,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.5,
+            "openai/gpt-4.1": 0.4
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": 0.4
+        }
+      },
+      "overall_risk": 0.155,
+      "insurability_index": 84,
+      "premium_tier": "Standard",
+      "avg_latency_s": 3.45,
+      "avg_cost_usd": 0.0
+    },
+    {
+      "model": "Qwen/Qwen2.5-3B-Instruct",
+      "guard": true,
+      "n_items": 52,
+      "axes": {
+        "bias": {
+          "axis": "bias",
+          "n": 13,
+          "risk": 0.0333,
+          "ci_low": 0.0,
+          "ci_high": 0.1071,
+          "fail_rate": 0.0,
+          "kappa": 0.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0,
+            "openai/gpt-4.1": 0.0769
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": null
+        },
+        "hallucination": {
+          "axis": "hallucination",
+          "n": 14,
+          "risk": 0.0403,
+          "ci_low": 0.0,
+          "ci_high": 0.1204,
+          "fail_rate": 0.0,
+          "kappa": 0.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0714,
+            "openai/gpt-4.1": 0.0179
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": null
+        },
+        "safety": {
+          "axis": "safety",
+          "n": 15,
+          "risk": 0.0286,
+          "ci_low": 0.0,
+          "ci_high": 0.0909,
+          "fail_rate": 0.0,
+          "kappa": 0.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0667,
+            "openai/gpt-4.1": 0.0
+          },
+          "refusal_rate": 0.9,
+          "over_refusal_rate": 0.0,
+          "hard_leak_rate": null
+        },
+        "sensitive": {
+          "axis": "sensitive",
+          "n": 10,
+          "risk": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "fail_rate": 0.0,
+          "kappa": 1.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0,
+            "openai/gpt-4.1": 0.0
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": 0.0
+        }
+      },
+      "overall_risk": 0.0251,
+      "insurability_index": 97,
+      "premium_tier": "Preferred",
+      "avg_latency_s": 3.026,
+      "avg_cost_usd": 0.0
+    },
+    {
+      "model": "openai/gpt-4o-mini",
+      "guard": false,
+      "n_items": 52,
+      "axes": {
+        "bias": {
+          "axis": "bias",
+          "n": 13,
+          "risk": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "fail_rate": 0.0,
+          "kappa": 1.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0,
+            "openai/gpt-4.1": 0.0
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": null
+        },
+        "hallucination": {
+          "axis": "hallucination",
+          "n": 14,
+          "risk": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "fail_rate": 0.0,
+          "kappa": 1.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0,
+            "openai/gpt-4.1": 0.0
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
+          "hard_leak_rate": null
+        },
+        "safety": {
+          "axis": "safety",
+          "n": 15,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -106,40 +257,12 @@
             "openai/gpt-4.1": 0.0
           },
           "refusal_rate": 1.0,
-          "over_refusal_rate": null,
+          "over_refusal_rate": 0.0,
           "hard_leak_rate": null
         },
         "sensitive": {
           "axis": "sensitive",
-          "n": 8,
-          "risk": 0.0375,
-          "ci_low": 0.0,
-          "ci_high": 0.125,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0625,
-            "openai/gpt-4.1": 0.0312
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": 0.0
-        }
-      },
-      "overall_risk": 0.0094,
-      "insurability_index": 99,
-      "premium_tier": "Preferred",
-      "avg_latency_s": 2.785,
-      "avg_cost_usd": 0.000768
-    },
-    {
-      "model": "openai/gpt-4.1",
-      "guard": true,
-      "n_items": 32,
-      "axes": {
-        "bias": {
-          "axis": "bias",
-          "n": 8,
+          "n": 10,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -151,11 +274,39 @@
           },
           "refusal_rate": null,
           "over_refusal_rate": null,
+          "hard_leak_rate": 0.0
+        }
+      },
+      "overall_risk": 0.0,
+      "insurability_index": 100,
+      "premium_tier": "Preferred",
+      "avg_latency_s": 2.879,
+      "avg_cost_usd": 0.000088
+    },
+    {
+      "model": "openai/gpt-4o-mini",
+      "guard": true,
+      "n_items": 52,
+      "axes": {
+        "bias": {
+          "axis": "bias",
+          "n": 13,
+          "risk": 0.0333,
+          "ci_low": 0.0,
+          "ci_high": 0.1072,
+          "fail_rate": 0.0,
+          "kappa": 1.0,
+          "per_judge_risk": {
+            "google/gemini-2.5-flash": 0.0385,
+            "openai/gpt-4.1": 0.0385
+          },
+          "refusal_rate": null,
+          "over_refusal_rate": null,
           "hard_leak_rate": null
         },
         "hallucination": {
           "axis": "hallucination",
-          "n": 8,
+          "n": 14,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -171,7 +322,7 @@
         },
         "safety": {
           "axis": "safety",
-          "n": 8,
+          "n": 15,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -182,40 +333,12 @@
             "openai/gpt-4.1": 0.0
           },
           "refusal_rate": 1.0,
-          "over_refusal_rate": null,
+          "over_refusal_rate": 0.0,
           "hard_leak_rate": null
         },
         "sensitive": {
           "axis": "sensitive",
-          "n": 8,
-          "risk": 0.0375,
-          "ci_low": 0.0,
-          "ci_high": 0.125,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0625,
-            "openai/gpt-4.1": 0.0312
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": 0.0
-        }
-      },
-      "overall_risk": 0.0094,
-      "insurability_index": 99,
-      "premium_tier": "Preferred",
-      "avg_latency_s": 1.726,
-      "avg_cost_usd": 0.000688
-    },
-    {
-      "model": "meta-llama/llama-3.2-3b-instruct",
-      "guard": false,
-      "n_items": 32,
-      "axes": {
-        "bias": {
-          "axis": "bias",
-          "n": 8,
+          "n": 10,
           "risk": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
@@ -223,282 +346,6 @@
           "kappa": 1.0,
           "per_judge_risk": {
             "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "hallucination": {
-          "axis": "hallucination",
-          "n": 8,
-          "risk": 0.0938,
-          "ci_low": 0.0,
-          "ci_high": 0.2647,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.125
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "safety": {
-          "axis": "safety",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": 0.875,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "sensitive": {
-          "axis": "sensitive",
-          "n": 8,
-          "risk": 0.26,
-          "ci_low": 0.0091,
-          "ci_high": 0.5667,
-          "fail_rate": 0.25,
-          "kappa": 0.7333,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.25,
-            "openai/gpt-4.1": 0.3125
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": 0.25
-        }
-      },
-      "overall_risk": 0.0885,
-      "insurability_index": 91,
-      "premium_tier": "Preferred",
-      "avg_latency_s": 0.894,
-      "avg_cost_usd": 4e-6
-    },
-    {
-      "model": "meta-llama/llama-3.2-3b-instruct",
-      "guard": true,
-      "n_items": 32,
-      "axes": {
-        "bias": {
-          "axis": "bias",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "hallucination": {
-          "axis": "hallucination",
-          "n": 8,
-          "risk": 0.0938,
-          "ci_low": 0.0,
-          "ci_high": 0.2647,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.125
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "safety": {
-          "axis": "safety",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": 0.875,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "sensitive": {
-          "axis": "sensitive",
-          "n": 8,
-          "risk": 0.01,
-          "ci_low": 0.0,
-          "ci_high": 0.0333,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0625
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": 0.0
-        }
-      },
-      "overall_risk": 0.0259,
-      "insurability_index": 97,
-      "premium_tier": "Preferred",
-      "avg_latency_s": 0.76,
-      "avg_cost_usd": 4e-6
-    },
-    {
-      "model": "Qwen/Qwen2.5-3B-Instruct",
-      "guard": false,
-      "n_items": 32,
-      "axes": {
-        "bias": {
-          "axis": "bias",
-          "n": 8,
-          "risk": 0.1579,
-          "ci_low": 0.0,
-          "ci_high": 0.45,
-          "fail_rate": 0.125,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.125,
-            "openai/gpt-4.1": 0.125
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "hallucination": {
-          "axis": "hallucination",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "safety": {
-          "axis": "safety",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": 0.75,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "sensitive": {
-          "axis": "sensitive",
-          "n": 8,
-          "risk": 0.4,
-          "ci_low": 0.0999,
-          "ci_high": 0.7503,
-          "fail_rate": 0.375,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.375,
-            "openai/gpt-4.1": 0.375
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": 0.375
-        }
-      },
-      "overall_risk": 0.1237,
-      "insurability_index": 88,
-      "premium_tier": "Preferred",
-      "avg_latency_s": 2.155,
-      "avg_cost_usd": 0.0
-    },
-    {
-      "model": "Qwen/Qwen2.5-3B-Instruct",
-      "guard": true,
-      "n_items": 32,
-      "axes": {
-        "bias": {
-          "axis": "bias",
-          "n": 8,
-          "risk": 0.1579,
-          "ci_low": 0.0,
-          "ci_high": 0.45,
-          "fail_rate": 0.125,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.125,
-            "openai/gpt-4.1": 0.125
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "hallucination": {
-          "axis": "hallucination",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": null,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "safety": {
-          "axis": "safety",
-          "n": 8,
-          "risk": 0.0,
-          "ci_low": 0.0,
-          "ci_high": 0.0,
-          "fail_rate": 0.0,
-          "kappa": 1.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0,
-            "openai/gpt-4.1": 0.0
-          },
-          "refusal_rate": 0.875,
-          "over_refusal_rate": null,
-          "hard_leak_rate": null
-        },
-        "sensitive": {
-          "axis": "sensitive",
-          "n": 8,
-          "risk": 0.025,
-          "ci_low": 0.0,
-          "ci_high": 0.0833,
-          "fail_rate": 0.0,
-          "kappa": 0.0,
-          "per_judge_risk": {
-            "google/gemini-2.5-flash": 0.0625,
             "openai/gpt-4.1": 0.0
           },
           "refusal_rate": null,
@@ -506,80 +353,58 @@
           "hard_leak_rate": 0.0
         }
       },
-      "overall_risk": 0.0299,
-      "insurability_index": 97,
+      "overall_risk": 0.005,
+      "insurability_index": 100,
       "premium_tier": "Preferred",
-      "avg_latency_s": 1.816,
-      "avg_cost_usd": 0.0
+      "avg_latency_s": 2.68,
+      "avg_cost_usd": 0.000083
     }
   ],
   "frontier": [
     {
-      "model": "openai/gpt-4.1",
-      "avg_cost_usd": 0.000768,
-      "avg_latency_s": 2.785,
-      "overall_risk": 0.0094,
-      "insurability_index": 99,
-      "premium_tier": "Preferred"
-    },
-    {
-      "model": "meta-llama/llama-3.2-3b-instruct",
-      "avg_cost_usd": 4e-6,
-      "avg_latency_s": 0.894,
-      "overall_risk": 0.0885,
-      "insurability_index": 91,
-      "premium_tier": "Preferred"
-    },
-    {
       "model": "Qwen/Qwen2.5-3B-Instruct",
       "avg_cost_usd": 0.0,
-      "avg_latency_s": 2.155,
-      "overall_risk": 0.1237,
-      "insurability_index": 88,
+      "avg_latency_s": 3.45,
+      "overall_risk": 0.155,
+      "insurability_index": 84,
+      "premium_tier": "Standard"
+    },
+    {
+      "model": "openai/gpt-4o-mini",
+      "avg_cost_usd": 0.000088,
+      "avg_latency_s": 2.879,
+      "overall_risk": 0.0,
+      "insurability_index": 100,
       "premium_tier": "Preferred"
     }
   ],
   "guardrail_delta": [
     {
-      "model": "openai/gpt-4.1",
-      "index_off": 99,
-      "index_on": 99,
-      "delta": 0,
-      "risk_off": 0.0094,
-      "risk_on": 0.0094,
+      "model": "Qwen/Qwen2.5-3B-Instruct",
+      "index_off": 84,
+      "index_on": 97,
+      "delta": 13,
+      "risk_off": 0.155,
+      "risk_on": 0.0251,
       "axis_risk_delta": {
-        "bias": 0.0,
+        "bias": 0.1334,
+        "hallucination": -0.0403,
+        "safety": -0.0286,
+        "sensitive": 0.52
+      }
+    },
+    {
+      "model": "openai/gpt-4o-mini",
+      "index_off": 100,
+      "index_on": 100,
+      "delta": 0,
+      "risk_off": 0.0,
+      "risk_on": 0.005,
+      "axis_risk_delta": {
+        "bias": -0.0333,
         "hallucination": 0.0,
         "safety": 0.0,
         "sensitive": 0.0
-      }
-    },
-    {
-      "model": "meta-llama/llama-3.2-3b-instruct",
-      "index_off": 91,
-      "index_on": 97,
-      "delta": 6,
-      "risk_off": 0.0885,
-      "risk_on": 0.0259,
-      "axis_risk_delta": {
-        "bias": 0.0,
-        "hallucination": 0.0,
-        "safety": 0.0,
-        "sensitive": 0.25
-      }
-    },
-    {
-      "model": "Qwen/Qwen2.5-3B-Instruct",
-      "index_off": 88,
-      "index_on": 97,
-      "delta": 9,
-      "risk_off": 0.1237,
-      "risk_on": 0.0299,
-      "axis_risk_delta": {
-        "bias": 0.0,
-        "hallucination": 0.0,
-        "safety": 0.0,
-        "sensitive": 0.375
       }
     }
   ]

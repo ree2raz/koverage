@@ -22,6 +22,13 @@ export default function ChatView() {
   const [lastTurn, setLastTurn] = useState<DoneEvent | null>(null);
   const [showTrace, setShowTrace] = useState(true);
   const [traceKey, setTraceKey] = useState(0);
+  const [guardrailsEnabled, setGuardrailsEnabled] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("guardrails_enabled") !== "false",
+  );
+
+  useEffect(() => {
+    localStorage.setItem("guardrails_enabled", String(guardrailsEnabled));
+  }, [guardrailsEnabled]);
 
   const convIdRef = useRef<string | null>(id ?? null);
   const abortRef = useRef<AbortController | null>(null);
@@ -90,7 +97,13 @@ export default function ChatView() {
     abortRef.current = abort;
     try {
       await streamChat(
-        { message: text, conversation_id: convIdRef.current, model, session_id: sessionId },
+        {
+          message: text,
+          conversation_id: convIdRef.current,
+          model,
+          session_id: sessionId,
+          guardrails_enabled: guardrailsEnabled,
+        },
         onEvent,
         abort.signal,
       );
@@ -133,6 +146,21 @@ export default function ChatView() {
           </h1>
           <div className="flex items-center gap-2">
             <ModelSelector models={models} value={model} onChange={setModel} disabled={streaming} />
+            <button
+              onClick={() => setGuardrailsEnabled((v) => !v)}
+              title={
+                guardrailsEnabled
+                  ? "Guardrails on — jailbreak attempts are refused before reaching the model"
+                  : "Guardrails off — every prompt reaches the model"
+              }
+              className={`rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
+                guardrailsEnabled
+                  ? "border-emerald-600/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                  : "border-slate-700 text-slate-400 hover:bg-slate-800"
+              }`}
+            >
+              Guardrails {guardrailsEnabled ? "on" : "off"}
+            </button>
             <button
               onClick={() => setShowTrace((s) => !s)}
               className="rounded-md border border-slate-700 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800"

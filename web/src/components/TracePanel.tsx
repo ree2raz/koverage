@@ -45,7 +45,9 @@ export default function TracePanel({
             ? "text-rose-400"
             : l.status === "cancelled"
               ? "text-amber-400"
-              : "text-emerald-400";
+              : l.status === "refused"
+                ? "text-fuchsia-300"
+                : "text-emerald-400";
 
         return (
           <div key={l.request_id} className="rounded-md border border-slate-800 bg-slate-900/50 p-3 space-y-2.5">

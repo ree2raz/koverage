@@ -210,7 +210,11 @@ export default function Dashboard() {
               const maxLat = Math.max(...recentLogs.map((x) => x.latency_ms), 1);
               const ttftPct = l.latency_ms ? Math.min(100, (l.ttft_ms / l.latency_ms) * 100) : 0;
               const barPct = (l.latency_ms / maxLat) * 100;
-              const statusColor = l.status === "error" ? "text-rose-400" : l.status === "cancelled" ? "text-amber-400" : "text-emerald-400";
+              const statusColor =
+                l.status === "error" ? "text-rose-400"
+                : l.status === "cancelled" ? "text-amber-400"
+                : l.status === "refused" ? "text-fuchsia-300"
+                : "text-emerald-400";
               const redactions = Object.entries(l.redaction_counts || {});
               return (
                 <div key={l.request_id}>

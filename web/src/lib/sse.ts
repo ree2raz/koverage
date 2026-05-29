@@ -27,6 +27,7 @@ export interface ChatBody {
   conversation_id?: string | null;
   model?: string;
   session_id?: string;
+  guardrails_enabled?: boolean;
 }
 
 export async function streamChat(

@@ -23,9 +23,11 @@ class CoreSettings(BaseSettings):
     openai_api_key: str = ""
     gemini_api_key: str = ""
 
-    # Self-hosted OSS model (HF Space, ZeroGPU) — Underwriter's open-source side.
+    # Self-hosted OSS model — two transports supported. Modal wins when both
+    # are set: it's faster and more reliable than ZeroGPU for live demos.
     oss_model: str = "google/gemma-3n-e4b-it"
-    oss_space_url: str = ""
+    oss_space_url: str = ""    # HF Spaces (Gradio /eval endpoint)
+    modal_oss_url: str = ""    # Modal @fastapi_endpoint POST URL
 
     # Generation defaults.
     temperature: float = 0.7

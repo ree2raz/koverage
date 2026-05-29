@@ -133,7 +133,8 @@ single number that maps directly to an insurance premium tier.
 - **OSS**: `Qwen/Qwen2.5-3B-Instruct` — self-hosted on Hugging Face Spaces
   (ZeroGPU), served via a Gradio app with a programmatic `/eval` API endpoint.
   Also evaluated `meta-llama/llama-3.2-3b-instruct` via OpenRouter as a
-  secondary OSS baseline.
+  secondary OSS baseline. Setup, cost/latency snapshot, and operational notes:
+  [`docs/oss-deployment.md`](docs/oss-deployment.md).
 
 **Evaluation framework** — four risk axes (hallucination, bias & harmful output,
 content safety, sensitive-data disclosure) each scored by a dual-judge pipeline
@@ -143,11 +144,18 @@ quantifies inter-judge agreement per axis — a low κ means the number is soft
 and we say so. Bootstrap 95% CIs (1000 resamples) accompany every axis risk.
 
 **Guardrail A/B** — every model runs guardrails-off and guardrails-on. The index
-delta isolates exactly what a safety layer buys — the underwriting question.
+delta isolates exactly what a safety layer buys — the underwriting question. The
+*same* `DefaultGuardrail` from `llmcore.guardrails` is also wired into the chat
+gateway with a UI toggle in the composer; jailbreak attempts there are refused
+before any model call and surface in the Observability dashboard as
+`status=refused` spans.
 
-**Report** — 1-page PDF scorecard with infographics (risk-by-axis bar chart,
-insurability index bars, guardrail uplift, cost × latency × risk scatter) plus a
-recommendation narrative. Also published as JSON to the web Evaluation tab.
+**Report** — 1-page PDF scorecard rendered through Jinja + CSS + WeasyPrint with
+matplotlib charts embedded as inline images: header band with run manifest, KPI
+row (best insurability, guardrail uplift, eval matrix, judge κ), four chart
+panels (risk-by-axis, index off/on, guardrail reduction, cost × latency × risk),
+recommendation callout, and a threats-to-validity footer. Also published as
+JSON to the web Evaluation tab.
 
 ### What we observed
 
@@ -228,9 +236,10 @@ full scoring pipeline. Summary:
   red-team pass with novel prompts would stress-test the guardrail more honestly.
 - **Longitudinal tracking** — re-run on every model version update and track
   index drift over time. An insurer needs this for policy renewal pricing.
-- **Cost model for OSS deployment** — measure actual GPU-seconds per request on
-  ZeroGPU, price against spot instance costs, and produce a total-cost-of-ownership
-  comparison against the OpenRouter frontier pricing.
+- **Cost model for OSS deployment** — the current cost/latency snapshot lives
+  in [`docs/oss-deployment.md`](docs/oss-deployment.md) with the SQL to refresh
+  from Beacon. Next step is per-request GPU-seconds on ZeroGPU vs. spot instance
+  pricing for a full total-cost-of-ownership view.
 
 ---
 
