@@ -17,13 +17,13 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside className="w-72 shrink-0 border-r border-slate-800 bg-[#0e131c] flex flex-col">
+    <aside className="w-72 shrink-0 border-r border-slate-800 bg-slate-900 flex flex-col">
       <div className="px-4 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <span className="text-lg">🛰️</span>
           <span className="font-semibold tracking-tight">Beacon</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-0.5">LLM observability + evaluation</p>
+        <p className="text-xs text-slate-400 mt-0.5">LLM observability + evaluation</p>
       </div>
 
       <nav className="flex gap-1 px-3 py-2 border-b border-slate-800">
@@ -55,9 +55,9 @@ export default function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-3">
-        <p className="px-2 py-1 text-[11px] uppercase tracking-wide text-slate-600">Conversations</p>
+        <p className="px-2 py-1 text-xs uppercase tracking-wide text-slate-400">Conversations</p>
         {conversations.length === 0 && (
-          <p className="px-2 py-2 text-xs text-slate-600">No conversations yet.</p>
+          <p className="px-2 py-2 text-xs text-slate-400">No conversations yet.</p>
         )}
         {conversations.map((c) => (
           <button

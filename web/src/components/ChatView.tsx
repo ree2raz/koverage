@@ -162,7 +162,7 @@ export default function ChatView() {
         {/* input */}
         <div className="border-t border-slate-800 px-5 py-3">
           {lastTurn && (
-            <div className="mb-2 text-[11px] text-slate-500 tabular-nums">
+            <div className="mb-2 text-xs text-slate-500 tabular-nums">
               last turn · {lastTurn.completion_tokens} tok · ${lastTurn.cost_usd.toFixed(6)} ·{" "}
               {lastTurn.status}
             </div>
@@ -199,7 +199,7 @@ export default function ChatView() {
       {/* trace side panel */}
       {showTrace && (
         <div className="w-[360px] shrink-0 border-l border-slate-800 bg-[#0e131c] overflow-y-auto p-3">
-          <p className="px-1 pb-2 text-[11px] uppercase tracking-wide text-slate-600">
+          <p className="px-1 pb-2 text-xs uppercase tracking-wide text-slate-600">
             Inference trace
           </p>
           {convIdRef.current ? (

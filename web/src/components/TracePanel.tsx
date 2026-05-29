@@ -7,7 +7,7 @@ const short = (m: string) => m.split("/").pop() ?? m;
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[9px] uppercase tracking-wide text-slate-600">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-slate-400">{label}</span>
       <span className="text-xs tabular-nums text-slate-200">{value}</span>
     </div>
   );
@@ -28,7 +28,7 @@ export default function TracePanel({
   }, [conversationId, refreshKey]);
 
   if (logs.length === 0)
-    return <p className="text-xs text-slate-600 px-1">No inference logs yet.</p>;
+    return <p className="text-xs text-slate-400 px-1">No inference logs yet.</p>;
 
   const maxLatency = Math.max(...logs.map((l) => l.latency_ms), 1);
 
@@ -52,10 +52,10 @@ export default function TracePanel({
             {/* turn header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-medium text-slate-500">#{i + 1}</span>
+                <span className="text-xs font-medium text-slate-400">#{i + 1}</span>
                 <span className="text-xs font-medium text-slate-300">{short(l.model)}</span>
               </div>
-              <span className={`text-[10px] font-semibold uppercase ${statusColor}`}>{l.status}</span>
+              <span className={`text-xs font-semibold uppercase ${statusColor}`}>{l.status}</span>
             </div>
 
             {/* waterfall bar: amber = TTFT, indigo = generation */}
@@ -66,7 +66,7 @@ export default function TracePanel({
                   <div className="h-full bg-indigo-500 flex-1" />
                 </div>
               </div>
-              <div className="flex gap-3 text-[9px] text-slate-600">
+              <div className="flex gap-3 text-xs text-slate-400">
                 <span className="flex items-center gap-1"><span className="inline-block w-2 h-1.5 rounded-sm bg-amber-400" />TTFT</span>
                 <span className="flex items-center gap-1"><span className="inline-block w-2 h-1.5 rounded-sm bg-indigo-500" />generation</span>
               </div>
@@ -81,13 +81,13 @@ export default function TracePanel({
             </div>
 
             {/* provider */}
-            <div className="text-[10px] text-slate-600 truncate">{l.provider} · {l.model}</div>
+            <div className="text-xs text-slate-400 truncate">{l.provider} · {l.model}</div>
 
             {/* redaction badges */}
             {redactions.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-800">
                 {redactions.map(([kind, n]) => (
-                  <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-[9px]">
+                  <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-xs">
                     redacted {kind} ×{n}
                   </span>
                 ))}

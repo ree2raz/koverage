@@ -57,9 +57,9 @@ const isOSS = (m: string) =>
 
 function ModelBadge({ model }: { model: string }) {
   return isOSS(model) ? (
-    <span className="ml-1.5 rounded bg-violet-500/20 text-violet-300 px-1.5 py-0.5 text-[9px] font-medium">OSS</span>
+    <span className="ml-1.5 rounded bg-violet-500/20 text-violet-300 px-1.5 py-0.5 text-xs font-medium">OSS</span>
   ) : (
-    <span className="ml-1.5 rounded bg-sky-500/20 text-sky-300 px-1.5 py-0.5 text-[9px] font-medium">Frontier</span>
+    <span className="ml-1.5 rounded bg-sky-500/20 text-sky-300 px-1.5 py-0.5 text-xs font-medium">Frontier</span>
   );
 }
 
@@ -97,7 +97,7 @@ export default function EvaluationView() {
     return (
       <div className="flex-1 overflow-y-auto p-6">
         <h1 className="text-lg font-semibold">Evaluation — Underwriter</h1>
-        <div className="mt-6 rounded-lg border border-dashed border-slate-800 p-10 text-center text-sm text-slate-600">
+        <div className="mt-6 rounded-lg border border-dashed border-slate-800 p-10 text-center text-sm text-slate-400">
           No scorecard published yet. Run{" "}
           <code className="text-slate-400">python -m underwriter.cli demo</code> (synthetic) or{" "}
           <code className="text-slate-400">run</code> (live) to populate this view.
@@ -105,7 +105,7 @@ export default function EvaluationView() {
       </div>
     );
   }
-  if (!sc) return <div className="flex-1 p-6 text-slate-500 text-sm">Loading scorecard…</div>;
+  if (!sc) return <div className="flex-1 p-6 text-slate-400 text-sm">Loading scorecard…</div>;
 
   const offModels = sc.models.filter((m) => !m.guard);
   const ossModel = sc.frontier.find((f) => isOSS(f.model));
@@ -116,7 +116,7 @@ export default function EvaluationView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">Evaluation — Underwriter</h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             Judges: {(sc.manifest.judges ?? []).map(short).join(" + ")} · N={sc.manifest.n_items}/model ·{" "}
             {new Date(sc.generated_at).toLocaleString()}
           </p>
@@ -145,7 +145,7 @@ export default function EvaluationView() {
                 </span>
               </div>
               <div className={`text-xs font-medium ${tierColor(f.premium_tier)}`}>{f.premium_tier}</div>
-              <div className="mt-2 text-[11px] text-slate-500 tabular-nums">
+              <div className="mt-2 text-xs text-slate-400 tabular-nums">
                 risk {f.overall_risk.toFixed(3)} · ${f.avg_cost_usd.toFixed(4)}/req · {f.avg_latency_s.toFixed(2)}s
               </div>
             </div>
@@ -157,18 +157,18 @@ export default function EvaluationView() {
         <div className="rounded-lg border border-slate-700 bg-[#0e131c] p-4">
           <h2 className="text-sm font-medium mb-3 text-slate-300">OSS vs Frontier comparison</h2>
           <div className="grid grid-cols-3 gap-4 text-xs">
-            <div className="text-slate-500 space-y-3 pt-6">
+            <div className="text-slate-400 space-y-3 pt-6">
               {["Insurability Index", "Overall Risk", "Avg Cost/req", "Avg Latency"].map((l) => (
                 <div key={l} className="h-6 flex items-center font-medium">{l}</div>
               ))}
             </div>
             {[frontierModel, ossModel].map((f) => (
               <div key={f.model} className="space-y-3 text-center">
-                <div className={`text-[10px] font-semibold mb-1 flex items-center justify-center gap-1`}>
+                <div className={`text-xs font-semibold mb-1 flex items-center justify-center gap-1`}>
                   {short(f.model)}<ModelBadge model={f.model} />
                 </div>
                 <div className="h-6 flex items-center justify-center tabular-nums text-slate-200 font-semibold">
-                  {f.insurability_index} <span className={`ml-1 text-[10px] ${tierColor(f.premium_tier)}`}>({f.premium_tier})</span>
+                  {f.insurability_index} <span className={`ml-1 text-xs ${tierColor(f.premium_tier)}`}>({f.premium_tier})</span>
                 </div>
                 <div className="h-6 flex items-center justify-center tabular-nums text-slate-300">{f.overall_risk.toFixed(3)}</div>
                 <div className="h-6 flex items-center justify-center tabular-nums text-slate-300">${f.avg_cost_usd.toFixed(5)}</div>
@@ -193,12 +193,12 @@ export default function EvaluationView() {
                   const ax = m.axes[a];
                   return (
                     <div key={a} className="rounded-md border border-slate-800 p-2.5">
-                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                      <div className="flex justify-between text-xs text-slate-400 mb-1">
                         <span>{AXIS_LABEL[a]}</span>
                         <span className="tabular-nums">{ax.risk.toFixed(2)}</span>
                       </div>
                       {riskBar(ax.risk)}
-                      <div className="mt-1 text-[10px] text-slate-600 tabular-nums">
+                      <div className="mt-1 text-xs text-slate-400 tabular-nums">
                         95% CI [{ax.ci_low.toFixed(2)}, {ax.ci_high.toFixed(2)}]
                         {ax.kappa != null && <> · κ={ax.kappa.toFixed(2)}</>}
                       </div>
@@ -221,8 +221,8 @@ export default function EvaluationView() {
             {sc.guardrail_delta.map((d) => (
               <div key={d.model} className="flex items-center gap-3 text-sm">
                 <span className="w-48 truncate text-slate-300">{short(d.model)}</span>
-                <span className="tabular-nums text-slate-500">{d.index_off}</span>
-                <span className="text-slate-600">→</span>
+                <span className="tabular-nums text-slate-400">{d.index_off}</span>
+                <span className="text-slate-400">→</span>
                 <span className="tabular-nums text-slate-200">{d.index_on}</span>
                 <span
                   className={`tabular-nums font-medium ${d.delta >= 0 ? "text-emerald-300" : "text-rose-300"}`}

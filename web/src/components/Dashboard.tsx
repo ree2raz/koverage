@@ -20,15 +20,15 @@ const WINDOWS: [string, number][] = [
   ["7d", 10080],
 ];
 
-const AXIS = { stroke: "#475569", fontSize: 11 };
+const AXIS = { stroke: "#94a3b8", fontSize: 12 };
 const GRID = "#1e293b";
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-[#0e131c] px-4 py-3">
-      <div className="text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
+    <div className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+      <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className="mt-1 text-2xl font-semibold text-slate-100 tabular-nums">{value}</div>
-      {sub && <div className="text-[11px] text-slate-500 mt-0.5">{sub}</div>}
+      {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -85,7 +85,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">Observability</h1>
-          <p className="text-xs text-slate-500">Latency, throughput, errors, and cost per model.</p>
+          <p className="text-xs text-slate-400">Latency, throughput, errors, and cost per model.</p>
         </div>
         <div className="flex gap-1">
           {WINDOWS.map(([label, mins]) => (
@@ -110,21 +110,21 @@ export default function Dashboard() {
       </div>
 
       {summary.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-800 p-10 text-center text-sm text-slate-600">
+        <div className="rounded-lg border border-dashed border-slate-800 p-10 text-center text-sm text-slate-400">
           No inference logs in this window yet. Start a chat and the metrics will stream in.
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-slate-800 bg-[#0e131c] p-4">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
               <h2 className="text-sm font-medium mb-3 text-slate-300">Latency by model (ms)</h2>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={latencyData}>
                   <CartesianGrid stroke={GRID} vertical={false} />
                   <XAxis dataKey="model" tick={AXIS} />
                   <YAxis tick={AXIS} />
-                  <Tooltip contentStyle={{ background: "#0b0e14", border: "1px solid #1e293b" }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b" }} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
                   <Bar dataKey="p50" fill="#34d399" />
                   <Bar dataKey="p95" fill="#60a5fa" />
                   <Bar dataKey="p99" fill="#f472b6" />
@@ -132,15 +132,15 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
 
-            <div className="rounded-lg border border-slate-800 bg-[#0e131c] p-4">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
               <h2 className="text-sm font-medium mb-3 text-slate-300">Throughput & errors</h2>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={seriesData}>
                   <CartesianGrid stroke={GRID} vertical={false} />
                   <XAxis dataKey="t" tick={AXIS} />
                   <YAxis tick={AXIS} />
-                  <Tooltip contentStyle={{ background: "#0b0e14", border: "1px solid #1e293b" }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b" }} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
                   <Line type="monotone" dataKey="requests" stroke="#818cf8" dot={false} />
                   <Line type="monotone" dataKey="errors" stroke="#fb7185" dot={false} />
                 </LineChart>
@@ -148,20 +148,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-800 bg-[#0e131c] p-4">
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
             <h2 className="text-sm font-medium mb-3 text-slate-300">Cost by model (USD)</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={costData}>
                 <CartesianGrid stroke={GRID} vertical={false} />
                 <XAxis dataKey="model" tick={AXIS} />
                 <YAxis tick={AXIS} />
-                <Tooltip contentStyle={{ background: "#0b0e14", border: "1px solid #1e293b" }} />
+                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b" }} />
                 <Bar dataKey="cost" fill="#fbbf24" />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="rounded-lg border border-slate-800 bg-[#0e131c] overflow-hidden">
+          <div className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-slate-900/60 text-slate-400 text-xs">
                 <tr>
@@ -196,13 +196,13 @@ export default function Dashboard() {
       )}
 
       {/* Recent spans / trace log */}
-      <div className="rounded-lg border border-slate-800 bg-[#0e131c] overflow-hidden">
+      <div className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-800">
           <h2 className="text-sm font-medium text-slate-300">Recent Spans</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">Last 30 inference traces — click any row to expand</p>
+          <p className="text-xs text-slate-400 mt-0.5">Last 30 inference traces — click any row to expand</p>
         </div>
         {recentLogs.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-slate-600 text-center">No traces yet. Start a chat to see spans here.</p>
+          <p className="px-4 py-6 text-sm text-slate-400 text-center">No traces yet. Start a chat to see spans here.</p>
         ) : (
           <div className="divide-y divide-slate-800">
             {recentLogs.map((l) => {
@@ -218,34 +218,34 @@ export default function Dashboard() {
                     onClick={() => setExpandedSpan(isOpen ? null : l.request_id)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/40 text-left transition-colors"
                   >
-                    <span className={`text-[10px] font-bold uppercase w-14 shrink-0 ${statusColor}`}>{l.status}</span>
+                    <span className={`text-xs font-bold uppercase w-14 shrink-0 ${statusColor}`}>{l.status}</span>
                     <span className="text-xs text-slate-300 w-28 shrink-0">{shortModel(l.model)}</span>
-                    <span className="text-[10px] text-slate-500 w-16 shrink-0">{l.provider}</span>
+                    <span className="text-xs text-slate-400 w-16 shrink-0">{l.provider}</span>
                     <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div style={{ width: `${barPct}%` }} className="h-full flex">
                         <div className="h-full bg-amber-400" style={{ width: `${ttftPct}%` }} />
                         <div className="h-full bg-indigo-500 flex-1" />
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-400 w-16 text-right shrink-0">{(l.latency_ms / 1000).toFixed(2)}s</span>
-                    <span className="text-[10px] text-slate-500 w-16 text-right shrink-0">${(l.cost_usd ?? 0).toFixed(5)}</span>
+                    <span className="text-xs text-slate-400 w-16 text-right shrink-0">{(l.latency_ms / 1000).toFixed(2)}s</span>
+                    <span className="text-xs text-slate-400 w-16 text-right shrink-0">${(l.cost_usd ?? 0).toFixed(5)}</span>
                     {redactions.length > 0 && (
-                      <span className="text-[9px] rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 shrink-0">PII</span>
+                      <span className="text-xs rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 shrink-0">PII</span>
                     )}
-                    <span className="text-slate-600 text-xs ml-1">{isOpen ? "▲" : "▼"}</span>
+                    <span className="text-slate-400 text-xs ml-1">{isOpen ? "▲" : "▼"}</span>
                   </button>
                   {isOpen && (
                     <div className="px-4 pb-3 pt-2 bg-slate-900/40 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs border-t border-slate-800">
-                      <div><span className="text-slate-500">TTFT </span><span className="text-slate-200 tabular-nums">{l.ttft_ms ?? 0} ms</span></div>
-                      <div><span className="text-slate-500">Latency </span><span className="text-slate-200 tabular-nums">{(l.latency_ms / 1000).toFixed(2)}s</span></div>
-                      <div><span className="text-slate-500">Tokens </span><span className="text-slate-200 tabular-nums">{l.prompt_tokens ?? 0}↑ {l.completion_tokens ?? 0}↓</span></div>
-                      <div><span className="text-slate-500">Cost </span><span className="text-slate-200 tabular-nums">${(l.cost_usd ?? 0).toFixed(5)}</span></div>
-                      <div className="col-span-2"><span className="text-slate-500">Request ID </span><span className="text-slate-400 font-mono text-[10px]">{l.request_id}</span></div>
-                      <div className="col-span-2"><span className="text-slate-500">Model </span><span className="text-slate-400 font-mono text-[10px]">{l.model}</span></div>
+                      <div><span className="text-slate-400">TTFT </span><span className="text-slate-200 tabular-nums">{l.ttft_ms ?? 0} ms</span></div>
+                      <div><span className="text-slate-400">Latency </span><span className="text-slate-200 tabular-nums">{(l.latency_ms / 1000).toFixed(2)}s</span></div>
+                      <div><span className="text-slate-400">Tokens </span><span className="text-slate-200 tabular-nums">{l.prompt_tokens ?? 0}↑ {l.completion_tokens ?? 0}↓</span></div>
+                      <div><span className="text-slate-400">Cost </span><span className="text-slate-200 tabular-nums">${(l.cost_usd ?? 0).toFixed(5)}</span></div>
+                      <div className="col-span-2"><span className="text-slate-400">Request ID </span><span className="text-slate-400 font-mono text-xs">{l.request_id}</span></div>
+                      <div className="col-span-2"><span className="text-slate-400">Model </span><span className="text-slate-400 font-mono text-xs">{l.model}</span></div>
                       {redactions.length > 0 && (
                         <div className="col-span-4 flex flex-wrap gap-1 pt-1">
                           {redactions.map(([kind, n]) => (
-                            <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-[9px]">
+                            <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-xs">
                               redacted {kind} ×{n}
                             </span>
                           ))}
