@@ -42,7 +42,7 @@ export default function Dashboard() {
   const [series, setSeries] = useState<TimeseriesRow[]>([]);
   const [recentLogs, setRecentLogs] = useState<InferenceLog[]>([]);
   const [expandedSpan, setExpandedSpan] = useState<string | null>(null);
-  const [windowMin, setWindowMin] = useState(1440);
+  const [windowMin, setWindowMin] = useState(60);
 
   useEffect(() => {
     let alive = true;
@@ -235,20 +235,42 @@ export default function Dashboard() {
                     <span className="text-slate-400 text-xs ml-1">{isOpen ? "▲" : "▼"}</span>
                   </button>
                   {isOpen && (
-                    <div className="px-4 pb-3 pt-2 bg-slate-900/40 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs border-t border-slate-800">
-                      <div><span className="text-slate-400">TTFT </span><span className="text-slate-200 tabular-nums">{l.ttft_ms ?? 0} ms</span></div>
-                      <div><span className="text-slate-400">Latency </span><span className="text-slate-200 tabular-nums">{(l.latency_ms / 1000).toFixed(2)}s</span></div>
-                      <div><span className="text-slate-400">Tokens </span><span className="text-slate-200 tabular-nums">{l.prompt_tokens ?? 0}↑ {l.completion_tokens ?? 0}↓</span></div>
-                      <div><span className="text-slate-400">Cost </span><span className="text-slate-200 tabular-nums">${(l.cost_usd ?? 0).toFixed(5)}</span></div>
-                      <div className="col-span-2"><span className="text-slate-400">Request ID </span><span className="text-slate-400 font-mono text-xs">{l.request_id}</span></div>
-                      <div className="col-span-2"><span className="text-slate-400">Model </span><span className="text-slate-400 font-mono text-xs">{l.model}</span></div>
+                    <div className="px-4 pb-4 pt-2 bg-slate-900/40 space-y-3 text-xs border-t border-slate-800">
+                      {/* metrics row */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div><span className="text-slate-400">TTFT </span><span className="text-slate-200 tabular-nums">{l.ttft_ms ?? 0} ms</span></div>
+                        <div><span className="text-slate-400">Latency </span><span className="text-slate-200 tabular-nums">{(l.latency_ms / 1000).toFixed(2)}s</span></div>
+                        <div><span className="text-slate-400">Tokens </span><span className="text-slate-200 tabular-nums">{l.prompt_tokens ?? 0}↑ {l.completion_tokens ?? 0}↓</span></div>
+                        <div><span className="text-slate-400">Cost </span><span className="text-slate-200 tabular-nums">${(l.cost_usd ?? 0).toFixed(5)}</span></div>
+                        <div className="col-span-2"><span className="text-slate-400">Request ID </span><span className="text-slate-400 font-mono">{l.request_id}</span></div>
+                        <div className="col-span-2"><span className="text-slate-400">Model </span><span className="text-slate-400 font-mono">{l.model}</span></div>
+                      </div>
+                      {/* redaction badges */}
                       {redactions.length > 0 && (
-                        <div className="col-span-4 flex flex-wrap gap-1 pt-1">
+                        <div className="flex flex-wrap gap-1">
                           {redactions.map(([kind, n]) => (
-                            <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-xs">
+                            <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5">
                               redacted {kind} ×{n}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {/* request payload */}
+                      {l.input_preview && (
+                        <div>
+                          <div className="text-slate-400 mb-1 uppercase tracking-wide">Request (redacted)</div>
+                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-40 overflow-y-auto">
+                            {l.input_preview}
+                          </pre>
+                        </div>
+                      )}
+                      {/* response payload */}
+                      {l.output_preview && (
+                        <div>
+                          <div className="text-slate-400 mb-1 uppercase tracking-wide">Response (redacted)</div>
+                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-40 overflow-y-auto">
+                            {l.output_preview}
+                          </pre>
                         </div>
                       )}
                     </div>
