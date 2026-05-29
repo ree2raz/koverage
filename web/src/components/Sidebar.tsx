@@ -62,8 +62,10 @@ export default function Sidebar() {
           <button
             key={c.id}
             onClick={() => navigate(`/c/${c.id}`)}
-            className={`w-full text-left rounded-md px-2 py-2 text-sm truncate flex items-center gap-2 ${
-              id === c.id ? "bg-slate-700/50 text-white" : "text-slate-300 hover:bg-slate-800/60"
+            className={`w-full text-left rounded-md px-2 py-2 text-sm flex items-center gap-2 transition-colors ${
+              id === c.id
+                ? "bg-indigo-600/30 border border-indigo-500/50 text-white"
+                : "text-slate-300 hover:bg-slate-800/60 border border-transparent"
             }`}
             title={c.title}
           >
