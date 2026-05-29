@@ -1,8 +1,15 @@
-"""Ollive OSS Assistant — Qwen2.5-3B-Instruct on ZeroGPU.
+"""Ollive OSS Inference Backend — Qwen2.5-3B-Instruct on ZeroGPU.
 
-Serves as the open-source baseline for the Underwriter evaluation.
-Set OSS_SPACE_URL=https://<username>-ollive-oss-assistant.hf.space in platform/.env
-to route Underwriter eval traffic here.
+This Space is the inference backend for the Ollive AI risk evaluation platform.
+It is NOT a user-facing demo — the UI below exists only because HF Spaces requires
+a Gradio app as the entry point.
+
+The Underwriter evaluation harness calls the /eval API endpoint programmatically:
+    client = gradio_client.Client("ree2raz/da-platform")
+    result = client.predict(prompt, system, api_name="/eval")
+    # → {"text": str, "latency_s": float, "completion_tokens": int}
+
+Source: https://github.com/ree2raz/olive-platform
 """
 
 import time
@@ -22,8 +29,7 @@ SYSTEM_PROMPT = (
     "say so rather than guessing."
 )
 
-# Load at module level — ZeroGPU emulates CUDA here for model loading,
-# then provides real GPU inside @spaces.GPU-decorated functions.
+# Load at module level — ZeroGPU requires this; model is kept warm between requests.
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
@@ -51,24 +57,8 @@ def _generate(messages: list[dict]) -> tuple[str, float, int]:
     return reply, round(latency, 3), int(len(new_tokens))
 
 
-def chat(message: str, history: list[tuple[str, str]]) -> str:
-    """Multi-turn chat used by the Gradio ChatInterface."""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for user_msg, assistant_msg in history:
-        messages.append({"role": "user", "content": user_msg})
-        messages.append({"role": "assistant", "content": assistant_msg})
-    messages.append({"role": "user", "content": message})
-    reply, latency, tokens = _generate(messages)
-    print(f"[ollive-oss] latency={latency}s tokens={tokens}")
-    return reply
-
-
 def eval_generate(prompt: str, system: str) -> dict:
-    """Single-turn endpoint for the Underwriter harness.
-
-    Called via gradio_client: client.predict(prompt, system, api_name="/eval")
-    Returns {"text": str, "latency_s": float, "completion_tokens": int}
-    """
+    """Underwriter harness endpoint. Called via gradio_client, api_name='/eval'."""
     messages = [
         {"role": "system", "content": system or SYSTEM_PROMPT},
         {"role": "user", "content": prompt},
@@ -77,34 +67,34 @@ def eval_generate(prompt: str, system: str) -> dict:
     return {"text": reply, "latency_s": latency, "completion_tokens": tokens}
 
 
-with gr.Blocks(title="Ollive OSS Assistant", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="Ollive OSS Inference Backend") as demo:
     gr.Markdown(
-        f"## Ollive OSS Assistant\n"
-        f"Powered by **{MODEL_ID}** on ZeroGPU · "
-        "Part of the Ollive AI risk evaluation platform."
+        """# Ollive OSS Inference Backend
+
+This Space is a **programmatic inference endpoint**, not a user-facing assistant.
+
+It serves `Qwen/Qwen2.5-3B-Instruct` on ZeroGPU and is called by the
+[Ollive evaluation harness](https://github.com/ree2raz/olive-platform) to benchmark
+the OSS model against frontier models (GPT-4.1) across four risk axes:
+hallucination, bias, content safety, and sensitive-data disclosure.
+
+**API usage (from the harness):**
+```python
+from gradio_client import Client
+client = Client("ree2raz/da-platform")
+result = client.predict(prompt, system_prompt, api_name="/eval")
+# → {"text": "...", "latency_s": 1.23, "completion_tokens": 42}
+```
+
+See the full platform at **github.com/ree2raz/olive-platform**.
+"""
     )
 
-    # User-facing chat tab
-    with gr.Tab("Chat"):
-        gr.ChatInterface(
-            fn=chat,
-            examples=[
-                "What is the capital of France?",
-                "Explain transformer attention in one paragraph.",
-                "What are the risks of AI-generated medical advice?",
-            ],
-            cache_examples=False,
-        )
-
-    # Programmatic eval tab (hidden from casual users, exposed as API)
-    with gr.Tab("Eval API"):
-        gr.Markdown(
-            "**Underwriter harness endpoint.**\n\n"
-            "Call via `client.predict(prompt, system, api_name='/eval')`."
-        )
+    # Minimal UI wrapper required by HF Spaces — the real interface is the /eval API above.
+    with gr.Accordion("API endpoint (for harness use)", open=False):
         with gr.Row():
-            eval_prompt = gr.Textbox(label="Prompt", lines=4)
-            eval_system = gr.Textbox(label="System prompt", lines=4, value=SYSTEM_PROMPT)
+            eval_prompt = gr.Textbox(label="Prompt", lines=3)
+            eval_system = gr.Textbox(label="System prompt", lines=3, value=SYSTEM_PROMPT)
         eval_btn = gr.Button("Run")
         eval_out = gr.JSON(label="Result")
         eval_btn.click(fn=eval_generate, inputs=[eval_prompt, eval_system], outputs=eval_out,
