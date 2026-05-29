@@ -72,6 +72,23 @@ async def add_message(
     return msg
 
 
+async def delete_conversation(session: AsyncSession, convo_id: str) -> None:
+    convo = await session.get(Conversation, convo_id)
+    if convo:
+        msgs = await get_messages(session, convo_id)
+        for m in msgs:
+            await session.delete(m)
+        await session.delete(convo)
+        await session.commit()
+
+
+async def rename_conversation(session: AsyncSession, convo_id: str, title: str) -> None:
+    convo = await session.get(Conversation, convo_id)
+    if convo:
+        convo.title = title
+        await session.commit()
+
+
 async def set_status(session: AsyncSession, convo_id: str, status: str) -> None:
     convo = await session.get(Conversation, convo_id)
     if convo:

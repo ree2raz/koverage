@@ -24,4 +24,11 @@ export const api = {
   timeseries: (windowMinutes = 60) =>
     getJSON<TimeseriesRow[]>(`/api/metrics/timeseries?window_minutes=${windowMinutes}`),
   cancel: (id: string) => fetch(`/conversations/${id}/cancel`, { method: "POST" }),
+  deleteConversation: (id: string) => fetch(`/api/conversations/${id}`, { method: "DELETE" }),
+  renameConversation: (id: string, title: string) =>
+    fetch(`/api/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }),
 };

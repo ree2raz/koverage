@@ -46,6 +46,28 @@ async def list_conversations(session: AsyncSession = Depends(get_session)) -> li
     ]
 
 
+@router.delete("/conversations/{convo_id}", status_code=204)
+async def delete_conversation(convo_id: str, session: AsyncSession = Depends(get_session)) -> None:
+    convo = await convo_repo.get_conversation(session, convo_id)
+    if convo is None:
+        raise HTTPException(404, "conversation not found")
+    await convo_repo.delete_conversation(session, convo_id)
+
+
+@router.patch("/conversations/{convo_id}")
+async def rename_conversation(
+    convo_id: str, body: dict, session: AsyncSession = Depends(get_session)
+) -> dict:
+    convo = await convo_repo.get_conversation(session, convo_id)
+    if convo is None:
+        raise HTTPException(404, "conversation not found")
+    title = str(body.get("title", "")).strip()
+    if not title:
+        raise HTTPException(422, "title must not be empty")
+    await convo_repo.rename_conversation(session, convo_id, title)
+    return {"id": convo_id, "title": title}
+
+
 @router.get("/conversations/{convo_id}")
 async def get_conversation(convo_id: str, session: AsyncSession = Depends(get_session)) -> dict:
     convo = await convo_repo.get_conversation(session, convo_id)
