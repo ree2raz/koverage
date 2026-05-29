@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from llmcore import CATALOG
+from llmcore.catalog import chat_models
 from prometheus_client import Counter, Histogram, make_asgi_app
 from sse_starlette.sse import EventSourceResponse
 
@@ -68,7 +69,7 @@ async def cancel(convo_id: str) -> dict:
 async def models() -> list[dict]:
     return [
         {"id": m.id, "label": m.label, "provider": m.provider, "gateway": m.gateway}
-        for m in CATALOG.values()
+        for m in chat_models()
     ]
 
 

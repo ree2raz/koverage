@@ -6,7 +6,7 @@ Both modules build on this:
 """
 
 from .assistant import Assistant, AssistantReply, Guardrail
-from .catalog import CATALOG, ModelInfo, get_model, models_for_gateway
+from .catalog import CATALOG, ModelInfo, chat_models, get_model, models_for_gateway
 from .config import CoreSettings, settings
 from .memory import Memory
 from .pricing import cost_usd
@@ -34,6 +34,7 @@ __all__ = [
     "ModelInfo",
     "get_model",
     "models_for_gateway",
+    "chat_models",
     "cost_usd",
     "OpenAICompatibleBackend",
     "Router",
