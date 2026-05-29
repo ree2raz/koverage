@@ -1,11 +1,17 @@
-# Multi-stage build: Node builds the React SPA, nginx serves it.
-# Nginx also reverse-proxies API paths to the gateway service.
+# Web — React SPA built with Vite, served by nginx.
 # Build context: platform/ (so deploy/nginx.conf is accessible)
+#
+# Layer order: package.json → npm ci (cached) → source → build
 
 FROM node:20-alpine AS build
 WORKDIR /app
+
+# ── Step 1: install deps (cached until package.json / package-lock.json change)
 COPY web/package*.json ./
-RUN npm ci --silent
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --silent
+
+# ── Step 2: copy source and build (only rebuilds on source changes)
 COPY web/ .
 RUN npm run build
 
