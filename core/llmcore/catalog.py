@@ -97,10 +97,10 @@ CATALOG: dict[str, ModelInfo] = {
         ),
         ModelInfo(
             id="Qwen/Qwen2.5-3B-Instruct",
-            label="Qwen2.5 3B (self-hosted)",
+            label="Qwen2.5 3B (HF Space)",
             provider="oss",
             gateway="oss",
-            chat=False,
+            chat=True,
             context_tokens=32_768,
             notes="Qwen2.5-3B-Instruct on HF Space ZeroGPU; cost in GPU-seconds.",
         ),

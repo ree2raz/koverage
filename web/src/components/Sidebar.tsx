@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../store";
 
 const navItem =
@@ -12,7 +12,8 @@ function statusDot(status: string) {
 
 export default function Sidebar() {
   const { conversations } = useStore();
-  const { id } = useParams();
+  const location = useLocation();
+  const activeId = location.pathname.match(/^\/c\/(.+)$/)?.[1];
   const navigate = useNavigate();
 
   return (
@@ -63,7 +64,7 @@ export default function Sidebar() {
             key={c.id}
             onClick={() => navigate(`/c/${c.id}`)}
             className={`w-full text-left rounded-md px-2 py-2 text-sm flex items-center gap-2 transition-colors ${
-              id === c.id
+              activeId === c.id
                 ? "bg-indigo-600/30 border border-indigo-500/50 text-white"
                 : "text-slate-300 hover:bg-slate-800/60 border border-transparent"
             }`}

@@ -16,6 +16,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from llmcore import CATALOG
 from llmcore.catalog import chat_models
+from llmcore.providers import Router as LLMRouter
+
+_router = LLMRouter()
 from prometheus_client import Counter, Histogram, make_asgi_app
 from sse_starlette.sse import EventSourceResponse
 
@@ -67,9 +70,11 @@ async def cancel(convo_id: str) -> dict:
 
 @app.get("/models")
 async def models() -> list[dict]:
+    reachable = {m.id for m in _router.available_models()}
     return [
         {"id": m.id, "label": m.label, "provider": m.provider, "gateway": m.gateway}
         for m in chat_models()
+        if m.id in reachable
     ]
 
 

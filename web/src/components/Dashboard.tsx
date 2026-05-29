@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
-import type { MetricSummaryRow, TimeseriesRow } from "../types";
+import type { InferenceLog, MetricSummaryRow, TimeseriesRow } from "../types";
 
 const WINDOWS: [string, number][] = [
   ["1h", 60],
@@ -40,16 +40,16 @@ function shortModel(m: string) {
 export default function Dashboard() {
   const [summary, setSummary] = useState<MetricSummaryRow[]>([]);
   const [series, setSeries] = useState<TimeseriesRow[]>([]);
+  const [recentLogs, setRecentLogs] = useState<InferenceLog[]>([]);
+  const [expandedSpan, setExpandedSpan] = useState<string | null>(null);
   const [windowMin, setWindowMin] = useState(1440);
 
   useEffect(() => {
     let alive = true;
     const load = () => {
       api.summary(windowMin).then((s) => alive && setSummary(s)).catch(() => {});
-      api
-        .timeseries(Math.min(windowMin, 360))
-        .then((s) => alive && setSeries(s))
-        .catch(() => {});
+      api.timeseries(Math.min(windowMin, 360)).then((s) => alive && setSeries(s)).catch(() => {});
+      api.recentLogs(30).then((l) => alive && setRecentLogs(l)).catch(() => {});
     };
     load();
     const t = setInterval(load, 5000);
@@ -194,6 +194,71 @@ export default function Dashboard() {
           </div>
         </>
       )}
+
+      {/* Recent spans / trace log */}
+      <div className="rounded-lg border border-slate-800 bg-[#0e131c] overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-800">
+          <h2 className="text-sm font-medium text-slate-300">Recent Spans</h2>
+          <p className="text-[11px] text-slate-500 mt-0.5">Last 30 inference traces — click any row to expand</p>
+        </div>
+        {recentLogs.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-slate-600 text-center">No traces yet. Start a chat to see spans here.</p>
+        ) : (
+          <div className="divide-y divide-slate-800">
+            {recentLogs.map((l) => {
+              const isOpen = expandedSpan === l.request_id;
+              const maxLat = Math.max(...recentLogs.map((x) => x.latency_ms), 1);
+              const ttftPct = l.latency_ms ? Math.min(100, (l.ttft_ms / l.latency_ms) * 100) : 0;
+              const barPct = (l.latency_ms / maxLat) * 100;
+              const statusColor = l.status === "error" ? "text-rose-400" : l.status === "cancelled" ? "text-amber-400" : "text-emerald-400";
+              const redactions = Object.entries(l.redaction_counts || {});
+              return (
+                <div key={l.request_id}>
+                  <button
+                    onClick={() => setExpandedSpan(isOpen ? null : l.request_id)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/40 text-left transition-colors"
+                  >
+                    <span className={`text-[10px] font-bold uppercase w-14 shrink-0 ${statusColor}`}>{l.status}</span>
+                    <span className="text-xs text-slate-300 w-28 shrink-0">{shortModel(l.model)}</span>
+                    <span className="text-[10px] text-slate-500 w-16 shrink-0">{l.provider}</span>
+                    <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div style={{ width: `${barPct}%` }} className="h-full flex">
+                        <div className="h-full bg-amber-400" style={{ width: `${ttftPct}%` }} />
+                        <div className="h-full bg-indigo-500 flex-1" />
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 w-16 text-right shrink-0">{(l.latency_ms / 1000).toFixed(2)}s</span>
+                    <span className="text-[10px] text-slate-500 w-16 text-right shrink-0">${(l.cost_usd ?? 0).toFixed(5)}</span>
+                    {redactions.length > 0 && (
+                      <span className="text-[9px] rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 shrink-0">PII</span>
+                    )}
+                    <span className="text-slate-600 text-xs ml-1">{isOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-3 pt-2 bg-slate-900/40 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs border-t border-slate-800">
+                      <div><span className="text-slate-500">TTFT </span><span className="text-slate-200 tabular-nums">{l.ttft_ms ?? 0} ms</span></div>
+                      <div><span className="text-slate-500">Latency </span><span className="text-slate-200 tabular-nums">{(l.latency_ms / 1000).toFixed(2)}s</span></div>
+                      <div><span className="text-slate-500">Tokens </span><span className="text-slate-200 tabular-nums">{l.prompt_tokens ?? 0}↑ {l.completion_tokens ?? 0}↓</span></div>
+                      <div><span className="text-slate-500">Cost </span><span className="text-slate-200 tabular-nums">${(l.cost_usd ?? 0).toFixed(5)}</span></div>
+                      <div className="col-span-2"><span className="text-slate-500">Request ID </span><span className="text-slate-400 font-mono text-[10px]">{l.request_id}</span></div>
+                      <div className="col-span-2"><span className="text-slate-500">Model </span><span className="text-slate-400 font-mono text-[10px]">{l.model}</span></div>
+                      {redactions.length > 0 && (
+                        <div className="col-span-4 flex flex-wrap gap-1 pt-1">
+                          {redactions.map(([kind, n]) => (
+                            <span key={kind} className="rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5 text-[9px]">
+                              redacted {kind} ×{n}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
