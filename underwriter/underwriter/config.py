@@ -17,12 +17,13 @@ class UnderwriterSettings(BaseSettings):
     # (llmcore.chat_models()). Comma-separated; override via .env for more
     # frontier rows in the comparison. The OSS model is added automatically when
     # MODAL_OSS_URL is set (see runner). Judges are kept distinct (see below).
-    models_under_test: str = "openai/gpt-4o-mini"
-    oss_model: str = "Qwen/Qwen2.5-3B-Instruct"
-    # Self-hosted OSS model, served on Modal (vLLM behind a Modal endpoint).
-    modal_oss_url: str = ""    # Modal @fastapi_endpoint
-    # OpenRouter fallback when the Modal endpoint is unresponsive — keeps a full
-    # eval run from collapsing on a single outage. Same Qwen family.
+    # Frontier model under test — Gemini 2.5 Flash is the primary comparison target.
+    # Override via .env: MODELS_UNDER_TEST=google/gemini-2.5-flash
+    models_under_test: str = "google/gemini-2.5-flash"
+    # OSS model — 7B is meaningfully stronger than 3B and a fairer match for Gemini Flash.
+    # Served on Modal (vLLM). Falls back to OpenRouter when the endpoint is cold/down.
+    oss_model: str = "Qwen/Qwen2.5-7B-Instruct"
+    modal_oss_url: str = ""
     oss_fallback_model: str = "qwen/qwen-2.5-7b-instruct"
 
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)

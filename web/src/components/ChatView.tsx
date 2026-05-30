@@ -33,6 +33,8 @@ export default function ChatView() {
   const convIdRef = useRef<string | null>(id ?? null);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const tokenBufRef = useRef("");
+  const tokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // load model catalog once
   useEffect(() => {
@@ -62,17 +64,30 @@ export default function ChatView() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  function flushTokens() {
+    tokenTimerRef.current = null;
+    const chunk = tokenBufRef.current;
+    if (!chunk) return;
+    tokenBufRef.current = "";
+    setMessages((prev) => {
+      const copy = [...prev];
+      const last = copy[copy.length - 1];
+      if (last?.role === "assistant") {
+        copy[copy.length - 1] = { ...last, content: last.content + chunk };
+      }
+      return copy;
+    });
+  }
+
   function onEvent(msg: SSEMessage) {
     if (msg.event === "meta") {
       convIdRef.current = (msg.data as { conversation_id: string }).conversation_id;
     } else if (msg.event === "token") {
       const text = (msg.data as { text: string }).text;
-      setMessages((prev) => {
-        const copy = [...prev];
-        const last = copy[copy.length - 1];
-        copy[copy.length - 1] = { ...last, content: last.content + text };
-        return copy;
-      });
+      tokenBufRef.current += text;
+      if (!tokenTimerRef.current) {
+        tokenTimerRef.current = setTimeout(flushTokens, 20);
+      }
     } else if (msg.event === "done") {
       setLastTurn(msg.data as DoneEvent);
     } else if (msg.event === "error") {
@@ -110,6 +125,11 @@ export default function ChatView() {
     } catch (e) {
       if ((e as Error).name !== "AbortError") setError(String(e));
     } finally {
+      if (tokenTimerRef.current) {
+        clearTimeout(tokenTimerRef.current);
+        tokenTimerRef.current = null;
+      }
+      flushTokens();
       setStreaming(false);
       setMessages((prev) => {
         const copy = [...prev];

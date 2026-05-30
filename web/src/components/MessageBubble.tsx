@@ -1,7 +1,19 @@
 import type { ChatMessage } from "../types";
 
+function TypingIndicator() {
+  return (
+    <span className="inline-flex items-center gap-1 py-0.5">
+      <span className="typing-dot" />
+      <span className="typing-dot" style={{ animationDelay: "0.18s" }} />
+      <span className="typing-dot" style={{ animationDelay: "0.36s" }} />
+    </span>
+  );
+}
+
 export default function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
+  const isPending = message.streaming && !message.content;
+
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -11,8 +23,16 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
             : "bg-slate-800 text-slate-100 rounded-bl-sm"
         }`}
       >
-        {message.content}
-        {message.streaming && <span className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-slate-400 animate-pulse" />}
+        {isPending ? (
+          <TypingIndicator />
+        ) : (
+          <>
+            {message.content}
+            {message.streaming && (
+              <span className="inline-block w-[3px] h-[14px] ml-0.5 align-middle bg-slate-400 rounded-sm animate-pulse" />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
