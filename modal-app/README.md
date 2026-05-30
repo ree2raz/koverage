@@ -21,7 +21,7 @@ evaluation harness and the chat UI's OSS path.
 - **OpenAI-compatible** - vLLM serves `/v1/chat/completions`, so the platform's
   `OpenAICompatibleBackend` just works; the OSS path is a base-URL swap, not new code.
 - **Weights cached on a Volume** - the 8B weights download once to a persistent
-  `modal.Volume` (`ollive-hf-cache`) and are reused across deploys, instead of being
+  `modal.Volume` (`koverage-hf-cache`) and are reused across deploys, instead of being
   baked into a multi-GB image.
 
 ## Design notes

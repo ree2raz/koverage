@@ -32,8 +32,8 @@ class CoreSettings(BaseSettings):
     seed: int = 7
 
     # Attribution headers OpenRouter shows on its dashboard (optional, harmless).
-    app_referer: str = "https://github.com/ollive/platform"
-    app_title: str = "Ollive Platform"
+    app_referer: str = "https://github.com/koverage/platform"
+    app_title: str = "Koverage Platform"
 
 
 settings = CoreSettings()

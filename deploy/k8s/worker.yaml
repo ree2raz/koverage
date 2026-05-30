@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
-  namespace: ollive
+  namespace: koverage
 spec:
   replicas: 1
   selector:
@@ -15,11 +15,11 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ollive-platform:latest
+          image: koverage-platform:latest
           command: ["python", "-m", "beacon.worker.main"]
           envFrom:
             - secretRef:
-                name: ollive-secrets
+                name: koverage-secrets
           env:
             - name: DATABASE_URL
               value: postgresql+psycopg://beacon:beacon@postgres:5432/beacon

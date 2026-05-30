@@ -1,4 +1,4 @@
-# Ollive platform — one-command bring-up.
+# Koverage platform: one-command bring-up.
 #
 #   cp .env.example .env          # fill OPENROUTER_API_KEY
 #   docker compose -f deploy/docker-compose.yml up --build
@@ -8,7 +8,7 @@
 # Docker-internal hostnames (postgres, redpanda, ingestion) are set via
 # `environment:` which takes precedence over env_file values.
 
-name: ollive
+name: koverage
 
 services:
   # ── datastores ───────────────────────────────────────────────────────────

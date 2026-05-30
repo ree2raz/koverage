@@ -1,4 +1,4 @@
-"""Ollive OSS Inference — Modal + vLLM.                                               -
+"""Koverage OSS Inference — Modal + vLLM.                                               -
 Serves Qwen3-8B on an A10G via vLLM, exposing an OpenAI-compatible API at /v1/chat/completions. vLLM's continuous batching handles concurrent requests.
 
 Deploy:
@@ -23,8 +23,8 @@ MINUTES = 60
 MODEL_ID = "Qwen/Qwen3-8B"
 MAX_MODEL_LEN = 16_384
 
-app = modal.App("ollive-oss-inference")
-hf_cache = modal.Volume.from_name("ollive-hf-cache", create_if_missing=True)
+app = modal.App("koverage-oss-inference")
+hf_cache = modal.Volume.from_name("koverage-hf-cache", create_if_missing=True)
 
 image = (
     modal.Image.debian_slim(python_version="3.12")

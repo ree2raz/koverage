@@ -209,7 +209,7 @@ same `OpenAICompatibleBackend` as every other provider (no custom protocol):
 Underwriter harness
     │  POST /v1/chat/completions   (OpenAI-compatible)
     ▼
-Modal endpoint (ollive-oss-inference)
+Modal endpoint (koverage-oss-inference)
     │  A10G GPU · vLLM · 16k context · continuous batching · scales to zero
     ▼
 Qwen/Qwen3-8B   (T=0 for the eval; weights cached on a Modal Volume)

@@ -1,4 +1,4 @@
-"""llmcore — the shared LLM layer for the Ollive platform.
+"""llmcore: the shared LLM layer for the Koverage platform.
 
 Both modules build on this:
   - Beacon (observability) instruments these backends with its SDK.

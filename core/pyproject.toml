@@ -1,7 +1,7 @@
 [project]
 name = "llmcore"
 version = "0.1.0"
-description = "Shared LLM layer (provider router, memory, tools, pricing) for the Ollive platform"
+description = "Shared LLM layer (provider router, memory, tools, pricing) for the Koverage platform"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7",

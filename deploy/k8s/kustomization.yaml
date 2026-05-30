@@ -2,16 +2,16 @@
 #   kubectl apply -k deploy/k8s/
 #
 # k3d quick-start:
-#   k3d cluster create ollive --port "5173:30173@loadbalancer" --port "8000:30800@loadbalancer"
-#   docker build -t ollive-platform:latest .
-#   docker build -t ollive-web:latest -f web/Dockerfile .
-#   k3d image import ollive-platform:latest ollive-web:latest -c ollive
+#   k3d cluster create koverage --port "5173:30173@loadbalancer" --port "8000:30800@loadbalancer"
+#   docker build -t koverage-platform:latest .
+#   docker build -t koverage-web:latest -f web/Dockerfile .
+#   k3d image import koverage-platform:latest koverage-web:latest -c koverage
 #   kubectl apply -k deploy/k8s/
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: ollive
+namespace: koverage
 
 resources:
   - namespace.yaml

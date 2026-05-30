@@ -212,7 +212,7 @@ across hallucination/bias/safety/sensitive, dual LLM-as-judge, and the 1-page re
 **Caption:** `OSS model deployed publicly: Modal + vLLM`
 1. Cut to terminal. Show the deployed app:
    ```bash
-   modal app list        # shows ollive-oss-inference running
+   modal app list        # shows koverage-oss-inference running
    ```
 2. Hit the live OpenAI-compatible endpoint directly:
    ```bash

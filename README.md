@@ -1,4 +1,4 @@
-# Ollive Platform: Observe Every Call, Score Every Model
+# Koverage: Observe Every Call, Score Every Model
 
 ## TL;DR
 

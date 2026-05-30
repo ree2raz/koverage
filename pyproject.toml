@@ -1,9 +1,9 @@
-# Workspace root for the Ollive platform monorepo.
+# Workspace root for the Koverage platform monorepo.
 # Members are installed editable into one venv; `uv run pytest` covers them all.
 [project]
-name = "ollive-platform"
+name = "koverage-platform"
 version = "0.0.0"
-description = "Ollive take-home: Beacon (LLM observability) + Underwriter (LLM evaluation) on a shared core"
+description = "Koverage: Beacon (LLM observability) + Underwriter (LLM evaluation) on a shared core"
 requires-python = ">=3.11"
 dependencies = ["llmcore", "llmobs", "beacon", "underwriter"]
 

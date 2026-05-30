@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway
-  namespace: ollive
+  namespace: koverage
 spec:
   replicas: 1
   selector:
@@ -19,11 +19,11 @@ spec:
     spec:
       initContainers:
         - name: migrate
-          image: ollive-platform:latest
+          image: koverage-platform:latest
           command: ["sh", "-c", "cd beacon && alembic upgrade head"]
           envFrom:
             - secretRef:
-                name: ollive-secrets
+                name: koverage-secrets
           env:
             - name: DATABASE_URL
               value: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
@@ -31,11 +31,11 @@ spec:
               value: redpanda:29092
       containers:
         - name: gateway
-          image: ollive-platform:latest
+          image: koverage-platform:latest
           command: ["uvicorn", "beacon.gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
           envFrom:
             - secretRef:
-                name: ollive-secrets
+                name: koverage-secrets
           env:
             - name: DATABASE_URL
               value: postgresql+psycopg://beacon:beacon@postgres:5432/beacon
@@ -62,7 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: gateway
-  namespace: ollive
+  namespace: koverage
 spec:
   selector:
     app: gateway
