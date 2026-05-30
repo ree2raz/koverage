@@ -1,8 +1,8 @@
 """Shared message / response types and the ModelBackend protocol.
 
 These types are deliberately backend-agnostic. Every model — a frontier model
-behind OpenRouter, or a self-hosted OSS model on an HF Space — exchanges the
-same Message objects, so the only thing that differs between them is which
+behind OpenRouter, or a self-hosted OSS model on Modal — exchanges the same
+Message objects, so the only thing that differs between them is which
 ModelBackend is plugged in. That keeps both jobs honest:
 
 - Beacon (observability) instruments one code path regardless of provider.

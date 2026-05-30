@@ -32,7 +32,7 @@ uv run python -m underwriter.cli run --smoke
 # full live evaluation (all suites, guard off+on, dual judges) → runs/<ts>/{scorecard.json,pdf}
 uv run python -m underwriter.cli run
 ```
-The OSS model (Gemma 3n) joins the run matrix automatically once `OSS_SPACE_URL`
+The OSS model (Qwen2.5-3B) joins the run matrix automatically once `MODAL_OSS_URL`
 is set; until then the harness runs on the configured frontier models.
 
 ## Offline tests (no API)

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from ..catalog import CATALOG, ModelInfo, get_model
 from ..config import CoreSettings, settings as default_settings
-from .hf_space import HFSpaceBackend
 from .modal_oss import ModalBackend
 from .openai_compatible import OpenAICompatibleBackend
 
@@ -22,7 +21,7 @@ class Router:
     def available_models(self) -> list[ModelInfo]:
         """Models we can actually reach given the configured credentials."""
         out: list[ModelInfo] = []
-        oss_reachable = bool(self.settings.modal_oss_url or self.settings.oss_space_url)
+        oss_reachable = bool(self.settings.modal_oss_url)
         for info in CATALOG.values():
             if info.gateway == "openrouter" and self.settings.openrouter_api_key:
                 out.append(info)
@@ -49,19 +48,13 @@ class Router:
                 },
             )
         if info.gateway == "oss":
-            # Modal wins when both are configured — faster, no shared-GPU shedding.
+            # Self-hosted OSS model served on Modal (vLLM behind a Modal endpoint).
             if self.settings.modal_oss_url:
                 return ModalBackend(
                     endpoint_url=self.settings.modal_oss_url,
                     model_id=info.id,
                 )
-            if self.settings.oss_space_url:
-                return HFSpaceBackend(
-                    space_url=self.settings.oss_space_url,
-                    model_id=info.id,
-                )
             raise ValueError(
-                f"OSS model {model_id!r} requested but neither MODAL_OSS_URL "
-                f"nor OSS_SPACE_URL is configured"
+                f"OSS model {model_id!r} requested but MODAL_OSS_URL is not configured"
             )
         raise ValueError(f"no gateway configured for model {model_id!r}")

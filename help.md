@@ -43,9 +43,9 @@
   (and Docker for Beacon) — those are yours to run. Everything else (tests, demo
   scorecard, PDF, the whole UI) runs offline right now.
 
-  Two open items for later (not blocking): drop in OSS_SPACE_URL when your HF Space is
-  up so Underwriter does the OSS-vs-frontier comparison, and GEMINI_API_KEY isn't
-  needed since the second judge routes through OpenRouter.
+  Two open items for later (not blocking): drop in MODAL_OSS_URL when your Modal
+  endpoint is up so Underwriter does the OSS-vs-frontier comparison, and GEMINI_API_KEY
+  isn't needed since the second judge routes through OpenRouter.
 
   Remaining: Phase 4 (one-command Docker Compose for all services + k8s + hardening)
   and Phase 5 (docs/demo/submission).

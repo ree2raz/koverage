@@ -1,8 +1,8 @@
 # Modal OSS Backend (Qwen2.5-3B)
 
-An alternative OSS path for the chat + Underwriter eval. Used when HF Spaces
-ZeroGPU is too flaky for live demos. Same `{prompt, system} → {text, latency_s,
-completion_tokens}` contract as the HF Space.
+The self-hosted OSS path for the chat + Underwriter eval: Qwen2.5-3B served on a
+Modal GPU endpoint with a `{prompt, system} → {text, latency_s, completion_tokens}`
+contract. The chat router and the eval harness both reach the OSS model here.
 
 ## One-time setup
 
@@ -35,9 +35,9 @@ Restart the gateway so it re-reads `.env`:
 docker compose -f deploy/docker-compose.yml restart gateway
 ```
 
-The chat's "Qwen 2.5 3B" entry now routes through Modal instead of HF Spaces.
-When both `MODAL_OSS_URL` and `OSS_SPACE_URL` are set, **Modal wins** (it's
-faster and more reliable for live demos).
+The chat's "Qwen 2.5 3B" entry and the Underwriter OSS row both route through
+this Modal endpoint. Without `MODAL_OSS_URL` set, the OSS model is simply absent
+from the chat selector and the eval matrix.
 
 ## Cost
 

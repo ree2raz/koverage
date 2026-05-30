@@ -177,11 +177,11 @@ harness is the product.
 
 **Assistants under test:**
 - **Frontier**: `openai/gpt-4.1` via OpenRouter
-- **OSS**: `Qwen/Qwen2.5-3B-Instruct` — self-hosted on Hugging Face Spaces
-  (ZeroGPU), served via a Gradio app with a programmatic `/eval` API endpoint.
-  Also evaluated `meta-llama/llama-3.2-3b-instruct` via OpenRouter as a
-  secondary OSS baseline. Setup, cost/latency snapshot, and operational notes:
-  [`docs/oss-deployment.md`](docs/oss-deployment.md).
+- **OSS**: `Qwen/Qwen2.5-3B-Instruct` — self-hosted on Modal (vLLM behind a
+  Modal endpoint), exposed to the harness via a small
+  `{prompt, system} → {text, latency, tokens}` API. Also evaluated
+  `meta-llama/llama-3.2-3b-instruct` via OpenRouter as a secondary OSS baseline.
+  Deployment, cost, and operational notes: [`modal-app/README.md`](modal-app/README.md).
 
 **Evaluation framework** — four risk axes (hallucination, bias & harmful output,
 content safety, sensitive-data disclosure) each scored by a dual-judge pipeline
@@ -251,7 +251,11 @@ meaningful risk to begin with.
 |---|---|---|
 | GPT-4.1 | $0.00077 | 2.79s |
 | Llama 3.2 3B | ~$0.00002 | 0.89s |
-| Qwen 2.5 3B (HF Space) | GPU-time | 2.15s |
+| Qwen 2.5 3B (OSS) | GPU-time | 2.15s* |
+
+<sub>*OSS latency was measured on the earlier HF Space deployment. The risk
+scores are deployment-independent (same weights, T=0); only latency is
+hardware-bound. Modal warm latency is comparable (~0.8–2 s).</sub>
 
 OSS models are 40–400× cheaper per request. For an insurer pricing AI risk,
 the calculus is: OSS saves cost but carries higher inherent risk; guardrails
@@ -277,16 +281,16 @@ full scoring pipeline. Summary:
   0.7 would characterise worst-case sampling, which matters more for insurance
   than best-case.
 - **Bigger OSS models** — Qwen 2.5 7B or 14B would narrow the gap to GPT-4.1
-  significantly while remaining self-hostable. ZeroGPU handles 7B; 14B needs
-  a paid GPU tier.
+  significantly while remaining self-hostable. A Modal A10G handles 7B; 14B
+  needs a larger GPU tier.
 - **Red-teaming** — the jailbreak suite covers known techniques; a dedicated
   red-team pass with novel prompts would stress-test the guardrail more honestly.
 - **Longitudinal tracking** — re-run on every model version update and track
   index drift over time. An insurer needs this for policy renewal pricing.
-- **Cost model for OSS deployment** — the current cost/latency snapshot lives
-  in [`docs/oss-deployment.md`](docs/oss-deployment.md) with the SQL to refresh
-  from Beacon. Next step is per-request GPU-seconds on ZeroGPU vs. spot instance
-  pricing for a full total-cost-of-ownership view.
+- **Cost model for OSS deployment** — deployment and cost notes live in
+  [`modal-app/README.md`](modal-app/README.md). Next step is per-request
+  GPU-seconds on Modal vs. spot-instance pricing for a full
+  total-cost-of-ownership view, refreshed from Beacon.
 
 ---
 
@@ -297,7 +301,7 @@ full scoring pipeline. Summary:
 uv sync
 
 # 2. Configure
-cp .env.example .env   # fill OPENROUTER_API_KEY; OSS_SPACE_URL optional
+cp .env.example .env   # fill OPENROUTER_API_KEY; MODAL_OSS_URL optional (self-hosted OSS)
 
 # 3. Infrastructure + app (one command)
 docker compose -f deploy/docker-compose.yml up --build
@@ -328,7 +332,7 @@ platform/
 ├── llmobs/              # observability SDK: capture, redact, queue, flush
 ├── beacon/              # gateway · ingestion · worker · Postgres/Alembic
 ├── underwriter/         # eval harness: suites · judges · scoring · report
-├── hf-space/            # Gradio app for OSS model on HF Spaces ZeroGPU
+├── modal-app/           # Modal app serving the self-hosted OSS model (Qwen2.5-3B)
 ├── web/                 # React + Vite + Tailwind SPA
 └── deploy/              # docker-compose · k8s kustomize manifests
 ```

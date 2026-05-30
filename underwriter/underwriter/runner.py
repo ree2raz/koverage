@@ -38,24 +38,22 @@ def _git_sha() -> str:
 
 def _models_under_test() -> list[str]:
     models = [m.strip() for m in settings.models_under_test.split(",") if m.strip()]
-    if settings.modal_oss_url or settings.oss_space_url:
+    if settings.modal_oss_url:
         # Run OSS FIRST. The first call doubles as the cold-start warm-up; by the
         # time we move to frontier models, the OSS container's GPU is free for the
         # keep-alive thread to maintain. If we ran OSS last, it would be cold by
-        # then and the run would race the GPU reload. (Router picks Modal or HF
-        # Space transport based on which env var is set; Modal wins if both.)
+        # then and the run would race the GPU reload.
         models.insert(0, settings.oss_model)
     return models
 
 
 def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0) -> threading.Event:
-    """Daemon that pings the OSS container every `interval_s` so the GPU host
-    doesn't reclaim it (HF Spaces ZeroGPU) or scale to zero (Modal) during the
-    long frontier passes. Returns a stop event the caller sets when the run
-    completes. No-op when OSS is not configured.
+    """Daemon that pings the OSS container every `interval_s` so the Modal host
+    doesn't scale to zero during the long frontier passes. Returns a stop event
+    the caller sets when the run completes. No-op when OSS is not configured.
     """
     stop = threading.Event()
-    if not (settings.modal_oss_url or settings.oss_space_url):
+    if not settings.modal_oss_url:
         return stop
     try:
         backend = router.backend_for(settings.oss_model)
@@ -75,16 +73,15 @@ def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0) -> threading.
                 return
 
     threading.Thread(target=loop, daemon=True, name="oss-keepalive").start()
-    transport = type(backend).__name__.replace("Backend", "")  # "Modal" or "HFSpace"
     print(
-        f"  [oss] routing {settings.oss_model} via {transport}; "
+        f"  [oss] routing {settings.oss_model} via Modal; "
         f"keep-alive every {interval_s:.0f}s"
     )
     return stop
 
 
 def _resolve_oss_backend(router: Router, model: str) -> tuple[str, ModelBackend]:
-    """For the HF-Space OSS model, ping the Space with a tiny prompt; if it raises
+    """For the Modal OSS model, ping the endpoint with a tiny prompt; if it raises
     after the backend's own retries are exhausted, swap to the OpenRouter fallback
     so the full eval still completes. No-op for non-OSS models.
     """
@@ -97,7 +94,7 @@ def _resolve_oss_backend(router: Router, model: str) -> tuple[str, ModelBackend]
     except Exception as exc:
         fb = settings.oss_fallback_model
         print(
-            f"  [oss] HF Space '{model}' unreachable ({type(exc).__name__}); "
+            f"  [oss] Modal endpoint '{model}' unreachable ({type(exc).__name__}); "
             f"falling back to OpenRouter '{fb}' for this run",
             flush=True,
         )
@@ -169,7 +166,7 @@ def run(
     run_dir.mkdir(parents=True, exist_ok=True)
     gen_f = (run_dir / "scores.jsonl").open("w")
 
-    # background keep-alive so the HF Space doesn't go cold mid-run
+    # background keep-alive so the Modal endpoint doesn't go cold mid-run
     keepalive_stop = _spawn_oss_keepalive(router)
 
     results: list[ModelResult] = []

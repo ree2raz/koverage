@@ -14,8 +14,8 @@ same suites, same judges. Any difference in score is the model's, not the harnes
 Models under test:
 - **Frontier**: `openai/gpt-4.1` — proprietary, closed-weights, via OpenRouter
 - **OSS (self-hosted)**: `Qwen/Qwen2.5-3B-Instruct` — open-weights, deployed on
-  Hugging Face Spaces ZeroGPU, served via a Gradio app with a programmatic
-  `/eval` API endpoint that the harness calls through `gradio_client`
+  Modal (vLLM behind a Modal GPU endpoint), served with a small
+  `{prompt, system} → {text, latency, tokens}` API that the harness calls directly
 - **OSS (OpenRouter)**: `meta-llama/llama-3.2-3b-instruct` — secondary baseline,
   served via OpenRouter's paid tier (no rate limit)
 
@@ -158,7 +158,11 @@ GPT-4.1 gains nothing (Δ=0) because it had no meaningful risk to reduce.
 |---|---|---|
 | GPT-4.1 | $0.00077 | 2.79s |
 | Llama 3.2 3B | ~$0.00002 (OpenRouter) | 0.89s |
-| Qwen 2.5 3B | GPU-time (HF Space) | 2.15s |
+| Qwen 2.5 3B | GPU-time | 2.15s* |
+
+<sub>*OSS latency was measured on the earlier HF Space deployment; only latency
+is hardware-bound. Risk scores are deployment-independent (same weights, T=0).
+Modal warm latency is comparable (~0.8–2 s).</sub>
 
 OSS models are 40–400× cheaper per request. For an insurer, the calculus is:
 OSS saves significant cost but carries 7–11× higher inherent sensitive-data risk;
@@ -178,23 +182,24 @@ guardrails are the mitigation that makes OSS viable at Preferred tier rates.
 
 ## 9. OSS deployment architecture
 
-The OSS model (Qwen 2.5 3B) is deployed as a Gradio app on HF Spaces ZeroGPU:
+The OSS model (Qwen 2.5 3B) is self-hosted on Modal — a GPU container exposing a
+single FastAPI endpoint:
 
 ```
 Underwriter harness
-    │  gradio_client.predict(prompt, system, api_name="/eval")
+    │  POST {prompt, system}  →  {text, latency_s, completion_tokens}
     ▼
-HF Space (ree2raz/da-platform)
-    │  Gradio app — two tabs: Chat UI + Eval API
-    │  @spaces.GPU(duration=120) wraps inference
-    │  device_map="cuda" (required for ZeroGPU reliability)
+Modal endpoint (ollive-qwen)
+    │  A10G GPU, FastAPI handler, scales to zero after idle
     ▼
 Qwen/Qwen2.5-3B-Instruct
     torch.float16, max_new_tokens=512, temperature=0.7
 ```
 
-Key ZeroGPU constraints: Gradio SDK only (no FastAPI/Docker), model must load at
-module level, `device_map="cuda"` not `"auto"`.
+Modal was chosen over a ZeroGPU Space for live reliability: faster cold start
+(8–15 s vs 30–60 s), no concurrent-request shedding, per-second billing. See
+[`modal-app/README.md`](../../modal-app/README.md) for deploy steps and the
+latency comparison.
 
 ---
 
@@ -223,9 +228,11 @@ Pinned models, temperature 0, fixed seed, fixed bootstrap count; every run write
   they are a floor, with judges providing the nuance layer.
 - **T=0 measures modal behaviour**, not worst-case sampling. Results may differ
   at higher temperatures.
-- **Qwen ran on CPU** during the HF Space eval (ZeroGPU cold start); outputs are
-  identical (same weights, deterministic at T=0 equivalent), latency is not
-  representative of a warm ZeroGPU instance.
+- **OSS latency provenance.** The Qwen latency figure was measured on the
+  earlier HF Space deployment (which fell back to CPU on a ZeroGPU cold start),
+  not on the current Modal endpoint. Outputs/scores are unaffected — same weights,
+  deterministic at T=0 — only the latency number is hardware-bound and pending a
+  Modal re-measure.
 
 ---
 
@@ -236,12 +243,12 @@ Pinned models, temperature 0, fixed seed, fixed bootstrap count; every run write
 - **Temperature sweep** — characterise worst-case sampling behaviour (T=0, 0.3,
   0.7) which matters more than modal behaviour for insurance risk pricing.
 - **Bigger OSS models** — Qwen 2.5 7B or Llama 3.1 8B would significantly narrow
-  the gap to GPT-4.1. ZeroGPU handles 7B comfortably.
+  the gap to GPT-4.1. A Modal A10G handles 7B comfortably.
 - **Red-team pass** — novel jailbreak prompts beyond known techniques to stress-test
   the guardrail under adversarial conditions.
 - **Longitudinal tracking** — re-run on every model version update; track index
   drift over time. Essential for policy renewal pricing.
-- **OSS cost model** — measure actual GPU-seconds per request on ZeroGPU, price
+- **OSS cost model** — measure actual GPU-seconds per request on Modal, price
   against spot instance costs, produce a total-cost-of-ownership comparison vs
   OpenRouter frontier pricing.
 - **More axes** — toxicity, copyright/IP reproduction, and multi-language coverage

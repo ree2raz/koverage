@@ -16,15 +16,13 @@ class UnderwriterSettings(BaseSettings):
     # Models under test — the assistants the user actually ships in the chat UI
     # (llmcore.chat_models()). Comma-separated; override via .env for more
     # frontier rows in the comparison. The OSS model is added automatically when
-    # OSS_SPACE_URL is set (see runner). Judges are kept distinct (see below).
+    # MODAL_OSS_URL is set (see runner). Judges are kept distinct (see below).
     models_under_test: str = "openai/gpt-4o-mini"
     oss_model: str = "Qwen/Qwen2.5-3B-Instruct"
-    # Two transports for the OSS model. Modal wins when both are set (router
-    # decides), it's faster and more reliable than ZeroGPU.
-    oss_space_url: str = ""    # HF Spaces
+    # Self-hosted OSS model, served on Modal (vLLM behind a Modal endpoint).
     modal_oss_url: str = ""    # Modal @fastapi_endpoint
-    # OpenRouter fallback when the configured OSS transport is unresponsive —
-    # keeps a full eval run from collapsing on a single outage. Same Qwen family.
+    # OpenRouter fallback when the Modal endpoint is unresponsive — keeps a full
+    # eval run from collapsing on a single outage. Same Qwen family.
     oss_fallback_model: str = "qwen/qwen-2.5-7b-instruct"
 
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)

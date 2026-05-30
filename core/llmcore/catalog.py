@@ -102,7 +102,7 @@ CATALOG: dict[str, ModelInfo] = {
             gateway="oss",
             chat=True,
             context_tokens=32_768,
-            notes="Qwen2.5-3B-Instruct self-hosted; router picks Modal or HF Space transport.",
+            notes="Qwen2.5-3B-Instruct self-hosted on Modal (vLLM endpoint).",
         ),
         ModelInfo(
             id="qwen/qwen-2.5-7b-instruct",
@@ -113,7 +113,7 @@ CATALOG: dict[str, ModelInfo] = {
             prompt_usd_per_1m=0.04,
             completion_usd_per_1m=0.10,
             context_tokens=131_072,
-            notes="OpenRouter fallback for OSS path when the HF Space is down.",
+            notes="OpenRouter fallback for OSS path when the Modal endpoint is down.",
         ),
     ]
 }

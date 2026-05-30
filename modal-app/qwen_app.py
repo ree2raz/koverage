@@ -1,8 +1,7 @@
 """Ollive OSS Inference Backend on Modal.
 
-Serves Qwen2.5-3B-Instruct on an A10G with a single FastAPI endpoint. Used as
-the OSS path for the chat + Underwriter eval when the HF Space is too flaky
-to depend on for live demos.
+Serves Qwen2.5-3B-Instruct on an A10G with a single FastAPI endpoint. This is
+the self-hosted OSS path for the chat + Underwriter eval.
 
 Deploy:
     modal deploy modal-app/qwen_app.py
@@ -11,7 +10,7 @@ Modal will print a URL like:
     https://<user>--ollive-qwen-qwenserver-generate.modal.run
 
 Set that as MODAL_OSS_URL in platform/.env, restart the gateway, and the chat's
-"Qwen 2.5 3B" entry now routes to Modal instead of HF Spaces.
+"Qwen 2.5 3B" entry routes here.
 
 Cost: A10G at ~$1.10/hr, charged per-second of active runtime. The container
 scales to zero after `scaledown_window` seconds of idle (default 5 min here),
@@ -83,8 +82,8 @@ class QwenServer:
     def generate(self, body: dict) -> dict:
         """POST {prompt, system} → {text, latency_s, completion_tokens}.
 
-        Same response shape the HF Space exposes, so the platform's OSS backend
-        is interchangeable between the two without changing the contract.
+        A small, stable response contract so the platform's OSS backend depends
+        on the shape, not on the host.
         """
         import time
 
