@@ -4,9 +4,8 @@ Capture inference metadata (latency, **TTFT**, tokens, cost, status, PII-redacte
 previews) from any LLM call, ship it without ever blocking the call, and view it
 on live dashboards and a per-conversation trace.
 
-Built for the Ollive **Founding Fullstack Engineer** take-home. Architecture
-notes (ingestion flow, logging strategy, scaling, failure handling, schema
-decisions): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Architecture notes (ingestion flow, logging strategy, scaling, failure handling,
+schema decisions): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Components
 | Path | What |

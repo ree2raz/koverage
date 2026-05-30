@@ -1,17 +1,25 @@
 # Ollive Platform — Observe and Judge Every LLM Call
 
-Two Ollive take-home assignments built as one coherent product. A multi-provider
-chatbot sits on a shared LLM core; every inference it makes is **observed**
-(Beacon) and **evaluated** (Underwriter).
+This is one product made of two halves that share a common LLM core. A
+multi-provider chatbot is the thing you actually use. Every call it makes is
+**watched** by Beacon and can be **graded** by Underwriter.
+
+- **Beacon** is the observability half: it records what every LLM call did —
+  how fast, how many tokens, how much it cost, whether it failed — and shows it
+  on a dashboard, all without slowing the chat down.
+- **Underwriter** is the evaluation half: it puts an open-source model and a
+  frontier model through the same safety tests and turns the results into a
+  single risk score and a one-page report.
+
+The two sections below explain each half in plain terms.
 
 ---
 
-## Assignment 1 — Founding Fullstack Engineer (Beacon)
+## Beacon — watch every LLM call
 
-### What was built
-
-A production-grade LLM observability pipeline with a streaming multi-provider
-chatbot as the instrumented workload.
+A streaming, multi-provider chatbot wired into an observability pipeline. The
+chatbot is the workload; the pipeline is the point — it captures what every
+inference did and stores it for analysis without ever blocking the chat.
 
 **SDK (`llmobs`)** — non-blocking capture at the call site. Every inference is
 wrapped in a `trace()` span that records model, provider, latency, TTFT, tokens,
@@ -94,7 +102,7 @@ loss is observable, not silent.
 | `request_id` UNIQUE as idempotency key | Safe redelivery from Kafka; slight write overhead on every insert |
 | Previews not raw content in inference_logs | Privacy-by-design; full content only in `messages` (the chat record) |
 | JSONB for `meta` and `redaction_counts` | Absorbs provider-specific fields without schema migrations |
-| Postgres for both OLTP and analytics | Simple at take-home volume; documented scale-out path to ClickHouse via the same Kafka topic |
+| Postgres for both OLTP and analytics | Simple at current volume; documented scale-out path to ClickHouse via the same Kafka topic |
 
 ### Quickstart
 
@@ -120,13 +128,13 @@ docker compose -f deploy/docker-compose.yml up --build
 
 ---
 
-## Assignment 2 — Founding AI/ML Engineer (Underwriter)
+## Underwriter — grade every model
 
-### What was built
-
-A systematic AI risk evaluation harness that compares an OSS assistant against a
-frontier assistant across four risk axes and produces an Insurability Index — a
-single number that maps directly to an insurance premium tier.
+A risk-evaluation harness. It runs an open-source assistant and a frontier
+assistant through the same four safety tests, scores each one, and rolls the
+results into a single Insurability Index — a 0–100 number that maps to an
+insurance premium tier. The two assistants are the subjects under test; the
+harness is the product.
 
 **Assistants under test:**
 - **Frontier**: `openai/gpt-4.1` via OpenRouter

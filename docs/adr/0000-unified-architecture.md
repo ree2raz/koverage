@@ -2,10 +2,10 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-27
-- **Context:** Two Ollive take-homes — a Fullstack assignment (LLM inference
-  logging & ingestion) and an AI/ML assignment (dual-model safety evaluation).
-  We build both at senior/staff quality as one project with two separable
-  modules, reusing as much as honestly possible.
+- **Context:** Two product concerns share most of their plumbing — an
+  observability surface (LLM inference logging & ingestion) and an evaluation
+  surface (dual-model safety scoring). We build both as one project with two
+  separable modules, reusing as much as honestly possible.
 
 ## Decision
 
@@ -23,25 +23,25 @@ platform/
 ### Key choices
 
 1. **Monorepo + shared `llmcore`.** The chatbot, multi-provider routing, and
-   cost model are needed by *both* assignments. Defining them once (in `core/`)
+   cost model are needed by *both* modules. Defining them once (in `core/`)
    keeps the comparison and the instrumentation consistent. uv workspace installs
-   the core editable into one venv. For separate submission, the core is small
-   enough to vendor into either module.
+   the core editable into one venv. To ship either module on its own, the core is
+   small enough to vendor in.
 
 2. **OpenRouter as the provider gateway.** One key reaches GPT-4.1, Claude,
-   Gemini, DeepSeek, Grok — all OpenAI-compatible. This satisfies Beacon's
-   "multi-provider support" bonus with one integration and gives Underwriter the
-   frontier models to compare. The open-source side (Gemma 3n, self-hosted on an
-   HF ZeroGPU Space) is the second gateway. `provider` is recorded per call for
-   cost and dashboards.
+   Gemini, DeepSeek, Grok — all OpenAI-compatible. This gives Beacon true
+   multi-provider coverage with one integration and gives Underwriter the
+   frontier models to compare. The open-source side (Qwen2.5-3B, self-hosted on
+   an HF ZeroGPU Space) is the second gateway. `provider` is recorded per call
+   for cost and dashboards.
 
 3. **Hybrid data/event infra (Redpanda + Postgres).** Keep a *real* event bus —
    the SDK returns immediately, ingestion produces to Redpanda and `202`s, a
-   worker persists — which is the marquee "event-based architecture" bonus and
-   the JD's high-velocity mandate. But consolidate on **one store (Postgres)**
+   worker persists — so observability never sits on the chat's critical path and
+   the system stays high-throughput. But consolidate on **one store (Postgres)**
    for both transactional chat state and analytics (indexed rollup views),
-   rather than adding a separate OLAP store. Rationale: time is split across two
-   equally-weighted modules; Postgres handles take-home volumes comfortably and
+   rather than adding a separate OLAP store. Rationale: effort is split across two
+   equally-weighted modules; Postgres handles current volumes comfortably and
    halves the ops surface. Dashboards render in-app (React) reading a Postgres
    read API. *(ClickHouse remains the documented scale-out path; see Beacon ADRs.)*
 
@@ -56,9 +56,8 @@ platform/
 
 ## Consequences
 
-- More moving parts than a single process — justified by the event-based and
-  dashboard bonuses and the "near-real-time inference layer" mandate; contained
-  by one-command compose.
+- More moving parts than a single process — justified by the event-based design
+  and the near-real-time dashboards; contained by one-command compose.
 - A `request_id` idempotency key threads SDK → ingestion → worker → store to keep
   at-least-once delivery safe.
 - Two modules share `llmcore`; splitting for separate submission means vendoring
@@ -70,5 +69,5 @@ platform/
   model, and routing, and loses the coherent "instrument + evaluate" story.
 - **Full OLAP stack (ClickHouse + Grafana).** Maximum ops-maturity signal, but a
   time sink with a second module to finish; kept as the documented scale path.
-- **Single FastAPI app writing straight to Postgres.** Fails the event-based
-  bonus and the scaling story; rejected.
+- **Single FastAPI app writing straight to Postgres.** Drops the event-based
+  design and the scaling story; rejected.

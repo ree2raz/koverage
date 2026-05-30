@@ -1,8 +1,7 @@
 # Underwriter — LLM evaluation as AI insurability scoring
 
-Built for the Ollive **Founding AI/ML Engineer** take-home. Evaluates models on
-the risks an AI liability insurer underwrites, then prices an **Insurability
-Index** and premium tier.
+Evaluates models on the risks an AI liability insurer underwrites, then prices
+an **Insurability Index** and premium tier.
 
 | Axis | What it measures | Suite |
 | --- | --- | --- |

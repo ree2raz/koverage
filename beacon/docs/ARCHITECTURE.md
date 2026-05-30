@@ -54,7 +54,7 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
   preserves per-request ordering and dedupe locality.
 - **Postgres** serves both transactional chat state and analytics here. Analytics
   queries use `percentile_cont` + `date_trunc` rollups; indexes on
-  `(ts, provider, model)` keep them cheap at take-home volume. **Scale-out path:**
+  `(ts, provider, model)` keep them cheap at current volume. **Scale-out path:**
   swap the analytics reads for a ClickHouse `MergeTree` fed by the same topic
   (Kafka-engine table → materialized rollups) behind the identical read API —
   documented as the next step rather than built, to keep the surface honest.
