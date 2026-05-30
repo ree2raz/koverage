@@ -222,9 +222,9 @@ export default function Dashboard() {
                     onClick={() => setExpandedSpan(isOpen ? null : l.request_id)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/40 text-left transition-colors"
                   >
-                    <span className={`text-xs font-bold uppercase w-14 shrink-0 ${statusColor}`}>{l.status}</span>
-                    <span className="text-xs text-slate-300 w-28 shrink-0">{shortModel(l.model)}</span>
-                    <span className="text-xs text-slate-400 w-16 shrink-0">{l.provider}</span>
+                    <span className={`text-xs font-bold uppercase w-20 shrink-0 truncate ${statusColor}`}>{l.status}</span>
+                    <span className="text-xs text-slate-300 w-28 shrink-0 truncate">{shortModel(l.model)}</span>
+                    <span className="text-xs text-slate-400 w-16 shrink-0 truncate">{l.provider}</span>
                     <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div style={{ width: `${barPct}%` }} className="h-full flex">
                         <div className="h-full bg-amber-400" style={{ width: `${ttftPct}%` }} />

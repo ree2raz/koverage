@@ -107,8 +107,9 @@ async def recent_logs(limit: int = 50, session: AsyncSession = Depends(get_sessi
     result = await session.execute(
         text(
             "SELECT request_id, conversation_id, provider, model, status, latency_ms, "
-            "ttft_ms, total_tokens, cost_usd, input_preview, output_preview, "
-            "redaction_counts, ts FROM inference_logs ORDER BY ts DESC LIMIT :lim"
+            "ttft_ms, prompt_tokens, completion_tokens, total_tokens, cost_usd, "
+            "input_preview, output_preview, redaction_counts, ts "
+            "FROM inference_logs ORDER BY ts DESC LIMIT :lim"
         ),
         {"lim": min(limit, 500)},
     )

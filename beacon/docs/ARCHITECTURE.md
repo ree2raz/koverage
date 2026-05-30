@@ -80,6 +80,20 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
   the core tradeoff, made explicit.
 - **Previews, not raw content.** The observability path stores only redacted,
   truncated previews; full content lives only in `messages` (the chat record).
+- **Deleting a chat does not erase its observability.** `DELETE /api/conversations/{id}`
+  removes the conversation and its `messages` (the chat record, cascade), but
+  **leaves `inference_logs` intact**. This is deliberate: the two write paths have
+  different lifecycles. Chat state is user-owned and disposable; `inference_logs`
+  is an *append-only operational audit stream* — latency, cost, error, and PII-control
+  receipts that ops and finance rely on. If deleting a chat retroactively erased its
+  logs, historical dashboards (p95 latency, cost-by-model, error rate for a past
+  window) would silently change every time a user pruned history, which defeats the
+  purpose of an audit trail. The logs already hold no raw content — only redacted
+  previews — so retention is privacy-safe. The cost is a dangling
+  `inference_logs.conversation_id` whose trace view 404s; `conversation_id` is
+  therefore an intentionally *soft* reference, not a foreign key. For a strict
+  right-to-erasure requirement the documented next step is a soft-delete that nulls
+  `conversation_id` and the previews while preserving the numeric metrics.
 - **`request_id` UNIQUE** is the idempotency key threaded end-to-end.
 - **JSONB escape hatches** (`meta`, `redaction_counts`) absorb provider-specific
   fields without migrations.
