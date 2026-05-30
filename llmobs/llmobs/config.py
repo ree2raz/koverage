@@ -15,7 +15,8 @@ class SDKSettings(BaseSettings):
     batch_size: int = 20  # flush when this many events are queued
     flush_interval_s: float = 1.0  # ...or at least this often
     max_queue: int = 10_000  # bounded; overflow is dropped (and counted)
-    preview_chars: int = 280  # truncate previews after redaction
+    preview_chars: int = 4000  # truncate previews after redaction (kept generous so
+    #                            the dashboard shows full payloads in a scroll box)
 
     # Delivery resilience
     max_retries: int = 4

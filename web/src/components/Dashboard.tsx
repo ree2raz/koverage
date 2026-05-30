@@ -263,7 +263,7 @@ export default function Dashboard() {
                       {l.input_preview && (
                         <div>
                           <div className="text-slate-400 mb-1 uppercase tracking-wide">Request (redacted)</div>
-                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-40 overflow-y-auto">
+                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-64 overflow-y-auto">
                             {l.input_preview}
                           </pre>
                         </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
                       {l.output_preview && (
                         <div>
                           <div className="text-slate-400 mb-1 uppercase tracking-wide">Response (redacted)</div>
-                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-40 overflow-y-auto">
+                          <pre className="whitespace-pre-wrap break-words rounded bg-slate-800 border border-slate-700 px-3 py-2 text-slate-300 font-mono leading-relaxed max-h-64 overflow-y-auto">
                             {l.output_preview}
                           </pre>
                         </div>
