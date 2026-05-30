@@ -25,5 +25,8 @@ class BeaconSettings(BaseSettings):
     gateway_port: int = 8000
     ingestion_port: int = 8088
 
+    # Semantic guardrail judge — must not be in the chat model list
+    guardrail_model: str = "openai/gpt-4.1-nano"
+
 
 settings = BeaconSettings()

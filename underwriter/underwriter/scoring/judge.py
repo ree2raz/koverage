@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 from llmcore import Router
 from llmcore.types import Message, Role
@@ -86,7 +87,10 @@ class DualJudge:
         return (self.judge_a.model_id, self.judge_b.model_id)
 
     def score(self, item, response: str) -> dict[str, JudgeVerdict]:
-        return {
-            self.judge_a.model_id: self.judge_a.score(item, response),
-            self.judge_b.model_id: self.judge_b.score(item, response),
-        }
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            fa = ex.submit(self.judge_a.score, item, response)
+            fb = ex.submit(self.judge_b.score, item, response)
+            return {
+                self.judge_a.model_id: fa.result(),
+                self.judge_b.model_id: fb.result(),
+            }

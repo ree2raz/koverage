@@ -56,4 +56,4 @@ def test_router_infers_provider_from_unknown_slug():
 
 def test_catalog_provider_labels():
     assert get_model("openai/gpt-4.1").provider == "openai"
-    assert get_model("Qwen/Qwen2.5-7B-Instruct").gateway == "oss"
+    assert get_model("Qwen/Qwen3-8B").gateway == "oss"

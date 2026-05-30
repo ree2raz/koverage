@@ -20,6 +20,7 @@ from pathlib import Path
 import openai
 
 from llmcore import Assistant, Memory, Router, cost_usd
+from llmcore.catalog import get_model
 from llmcore.types import Message, ModelBackend, Role
 
 from .config import axis_weights, settings
@@ -39,11 +40,15 @@ def _git_sha() -> str:
 def _models_under_test() -> list[str]:
     models = [m.strip() for m in settings.models_under_test.split(",") if m.strip()]
     if settings.modal_oss_url:
-        # Run OSS FIRST. The first call doubles as the cold-start warm-up; by the
-        # time we move to frontier models, the OSS container's GPU is free for the
-        # keep-alive thread to maintain. If we ran OSS last, it would be cold by
-        # then and the run would race the GPU reload.
-        models.insert(0, settings.oss_model)
+        if get_model(settings.oss_model) is not None:
+            # Run OSS FIRST — first call warms the cold-start; GPU stays free for
+            # the keep-alive thread while frontier models run.
+            models.insert(0, settings.oss_model)
+        else:
+            print(
+                f"  [warn] OSS_MODEL '{settings.oss_model}' is not in the catalog — "
+                f"update OSS_MODEL in .env to run the OSS path (current: Qwen/Qwen3-8B)"
+            )
     return models
 
 
@@ -146,6 +151,52 @@ def _run_item(
     return score, latency, cost
 
 
+def _is_oss(model: str) -> bool:
+    return model == settings.oss_model or model == settings.oss_fallback_model
+
+
+def _run_guard_pass(
+    backend: ModelBackend,
+    model: str,
+    items: list[PromptItem],
+    guard: bool,
+    judges: DualJudge,
+    weights: dict,
+) -> tuple[ModelResult, list[dict], str]:
+    """Run one (model, guard) cell. Returns (result, jsonl_records, print_line)."""
+    guardrail = build_guardrail() if guard else None
+    concurrency = settings.oss_concurrency if _is_oss(model) else settings.concurrency
+    scores: list[ItemScore] = []
+    latencies: list[float] = []
+    costs: list[float] = []
+    records: list[dict] = []
+    t0 = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=concurrency) as ex:
+        futures = [
+            ex.submit(_run_item, backend, item, model, guardrail, judges) for item in items
+        ]
+        for fut in as_completed(futures):
+            score, lat, cost = fut.result()
+            scores.append(score)
+            latencies.append(lat)
+            costs.append(cost)
+            rec = score.model_dump()
+            rec.update({"model": model, "guard": guard})
+            records.append(rec)
+    mr = aggregate_model(
+        model, guard, scores, axis_weights=weights,
+        iterations=settings.bootstrap_iterations, seed=settings.seed,
+        latencies=latencies, costs=costs,
+    )
+    elapsed = time.perf_counter() - t0
+    msg = (
+        f"  {model:32} guard={'on ' if guard else 'off'}  "
+        f"index={mr.insurability_index:3d} ({mr.premium_tier})  "
+        f"risk={mr.overall_risk:.3f}  {elapsed:.1f}s"
+    )
+    return mr, records, msg
+
+
 def run(
     *,
     models: list[str] | None = None,
@@ -182,35 +233,18 @@ def run(
     for original_model in models:
         model, backend = _resolve_oss_backend(router, original_model)
         resolved_models.append(model)
-        for guard in guard_options:
-            guardrail = build_guardrail() if guard else None
-            scores: list[ItemScore] = []
-            latencies: list[float] = []
-            costs: list[float] = []
-            t0 = time.perf_counter()
-            with ThreadPoolExecutor(max_workers=settings.concurrency) as ex:
-                futures = [
-                    ex.submit(_run_item, backend, item, model, guardrail, judges) for item in items
-                ]
-                for fut in as_completed(futures):
-                    score, lat, cost = fut.result()
-                    scores.append(score)
-                    latencies.append(lat)
-                    costs.append(cost)
-                    rec = score.model_dump()
-                    rec.update({"model": model, "guard": guard})
+        # Run guard=off and guard=on in parallel — they're independent cells.
+        with ThreadPoolExecutor(max_workers=len(guard_options)) as guard_ex:
+            guard_futures = {
+                guard: guard_ex.submit(_run_guard_pass, backend, model, items, guard, judges, weights)
+                for guard in guard_options
+            }
+            for guard in guard_options:
+                mr, records, msg = guard_futures[guard].result()
+                results.append(mr)
+                for rec in records:
                     gen_f.write(json.dumps(rec, default=str) + "\n")
-            mr = aggregate_model(
-                model, guard, scores, axis_weights=weights,
-                iterations=settings.bootstrap_iterations, seed=settings.seed,
-                latencies=latencies, costs=costs,
-            )
-            results.append(mr)
-            print(
-                f"  {model:32} guard={'on ' if guard else 'off'}  "
-                f"index={mr.insurability_index:3d} ({mr.premium_tier})  "
-                f"risk={mr.overall_risk:.3f}  {time.perf_counter() - t0:.1f}s"
-            )
+                print(msg)
     gen_f.close()
     keepalive_stop.set()
 

@@ -17,14 +17,13 @@ class UnderwriterSettings(BaseSettings):
     # (llmcore.chat_models()). Comma-separated; override via .env for more
     # frontier rows in the comparison. The OSS model is added automatically when
     # MODAL_OSS_URL is set (see runner). Judges are kept distinct (see below).
-    # Frontier model under test — Gemini 2.5 Flash is the primary comparison target.
-    # Override via .env: MODELS_UNDER_TEST=google/gemini-2.5-flash
-    models_under_test: str = "google/gemini-2.5-flash"
-    # OSS model — 7B is meaningfully stronger than 3B and a fairer match for Gemini Flash.
-    # Served on Modal (vLLM). Falls back to OpenRouter when the endpoint is cold/down.
-    oss_model: str = "Qwen/Qwen2.5-7B-Instruct"
+    # Frontier models under test — comma-separated; override via .env.
+    models_under_test: str = "google/gemini-2.5-flash,openai/gpt-4.1-mini"
+    # OSS model — Qwen3-8B (Apr 2025) self-hosted on Modal (vLLM).
+    # Falls back to OpenRouter when the endpoint is cold/down.
+    oss_model: str = "Qwen/Qwen3-8B"
     modal_oss_url: str = ""
-    oss_fallback_model: str = "qwen/qwen-2.5-7b-instruct"
+    oss_fallback_model: str = "qwen/qwen3-8b"
 
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)
     # the models under test, so no assistant grades itself or its sibling.
@@ -37,7 +36,8 @@ class UnderwriterSettings(BaseSettings):
     judge_temperature: float = 0.0
     seed: int = 7
     bootstrap_iterations: int = 1000
-    concurrency: int = 3
+    concurrency: int = 8        # frontier (OpenRouter) — I/O bound, high parallelism
+    oss_concurrency: int = 8    # OSS (Modal/vLLM) — vLLM batches internally, same parallelism
 
     # Optionally mirror eval traffic into Beacon so it appears in the dashboards.
     emit_to_beacon: bool = False

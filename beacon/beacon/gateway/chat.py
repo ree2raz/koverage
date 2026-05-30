@@ -29,6 +29,7 @@ from llmobs import trace
 from pydantic import BaseModel
 
 from ..db.base import SessionLocal
+from ..settings import settings as beacon_settings
 from . import conversations as convo_repo
 from .obs import get_obs
 
@@ -68,7 +69,7 @@ class ChatRequest(BaseModel):
     guardrails_enabled: bool = True
 
 
-_guardrail = build_guardrail()
+_guardrail = build_guardrail(backend=_router.backend_for(beacon_settings.guardrail_model))
 
 
 def _approx_tokens(text: str) -> int:
@@ -148,9 +149,9 @@ async def chat_stream(req: ChatRequest) -> AsyncIterator[dict]:
 
         yield _sse("meta", {"conversation_id": convo_id, "model": model})
 
-        # ── Guardrail: input check before any model call ───────────────────────
+        # ── Guardrail: regex fast path + async semantic LLM check ─────────────
         if req.guardrails_enabled:
-            allowed, refusal = _guardrail.check_input(req.message)
+            allowed, refusal = await _guardrail.check_input_async(req.message)
             if not allowed:
                 provider = model.split("/")[0] if "/" in model else model
                 with trace(obs, conversation_id=convo_id, provider=provider,

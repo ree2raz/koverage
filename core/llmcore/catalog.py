@@ -12,7 +12,7 @@ live in exactly one place. All hosted models are reached through OpenRouter
 without N separate integrations.
 
 Chat UI exposes 4 closed-source families, cheapest model per family:
-  openai/gpt-4o-mini · anthropic/claude-3.5-haiku
+  openai/gpt-4.1-mini · anthropic/claude-3.5-haiku
   google/gemini-2.5-flash · deepseek/deepseek-chat
 """
 
@@ -39,12 +39,12 @@ CATALOG: dict[str, ModelInfo] = {
     for m in [
         # ── 4 closed-source families, cheapest model each ─────────────────────
         ModelInfo(
-            id="openai/gpt-4o-mini",
-            label="GPT-4o mini",
+            id="openai/gpt-4.1-mini",
+            label="GPT-4.1 mini",
             provider="openai",
-            prompt_usd_per_1m=0.15,
-            completion_usd_per_1m=0.60,
-            context_tokens=128_000,
+            prompt_usd_per_1m=0.40,
+            completion_usd_per_1m=1.60,
+            context_tokens=1_047_576,
         ),
         ModelInfo(
             id="anthropic/claude-3.5-haiku",
@@ -82,31 +82,41 @@ CATALOG: dict[str, ModelInfo] = {
             context_tokens=1_047_576,
             notes="Used as Underwriter judge and frontier baseline.",
         ),
-
-        # ── OSS models (Underwriter only, not shown in chat UI) ───────────────
         ModelInfo(
-            id="meta-llama/llama-3.2-3b-instruct",
-            label="Llama 3.2 3B (OSS)",
-            provider="oss",
+            id="openai/gpt-4.1-nano",
+            label="GPT-4.1 nano",
+            provider="openai",
+            chat=False,
+            prompt_usd_per_1m=0.10,
+            completion_usd_per_1m=0.40,
+            context_tokens=1_047_576,
+            notes="Dedicated semantic guardrail judge — never exposed as a chat model.",
+        ),
+
+        # ── OSS models ────────────────────────────────────────────────────────
+        ModelInfo(
+            id="google/gemma-3-12b-it",
+            label="Gemma 3 12B (OSS)",
+            provider="google",
             gateway="openrouter",
             chat=False,
-            prompt_usd_per_1m=0.015,
-            completion_usd_per_1m=0.025,
+            prompt_usd_per_1m=0.04,
+            completion_usd_per_1m=0.10,
             context_tokens=131_072,
-            notes="Meta Llama 3.2 3B via OpenRouter — Underwriter OSS baseline.",
+            notes="Google Gemma 3 12B via OpenRouter — Underwriter OSS baseline.",
         ),
         ModelInfo(
-            id="Qwen/Qwen2.5-7B-Instruct",
-            label="Qwen2.5 7B (self-hosted)",
+            id="Qwen/Qwen3-8B",
+            label="Qwen3 8B (self-hosted)",
             provider="oss",
             gateway="oss",
             chat=True,
-            context_tokens=131_072,
-            notes="Qwen2.5-7B-Instruct self-hosted on Modal (vLLM endpoint).",
+            context_tokens=16_384,
+            notes="Qwen3-8B self-hosted on Modal (vLLM endpoint, 16k context).",
         ),
         ModelInfo(
-            id="qwen/qwen-2.5-7b-instruct",
-            label="Qwen2.5 7B (OpenRouter)",
+            id="qwen/qwen3-8b",
+            label="Qwen3 8B (OpenRouter)",
             provider="oss",
             gateway="openrouter",
             chat=False,

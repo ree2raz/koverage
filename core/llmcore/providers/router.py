@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from ..catalog import CATALOG, ModelInfo, get_model
 from ..config import CoreSettings, settings as default_settings
-from .modal_oss import ModalBackend
 from .openai_compatible import OpenAICompatibleBackend
 
 
@@ -48,11 +47,13 @@ class Router:
                 },
             )
         if info.gateway == "oss":
-            # Self-hosted OSS model served on Modal (vLLM behind a Modal endpoint).
+            # Self-hosted OSS model via Modal + vLLM (OpenAI-compatible /v1 API).
             if self.settings.modal_oss_url:
-                return ModalBackend(
-                    endpoint_url=self.settings.modal_oss_url,
-                    model_id=info.id,
+                return OpenAICompatibleBackend(
+                    provider="oss",
+                    model=info.id,
+                    base_url=self.settings.modal_oss_url.rstrip("/") + "/v1",
+                    api_key=self.settings.modal_oss_api_key,
                 )
             raise ValueError(
                 f"OSS model {model_id!r} requested but MODAL_OSS_URL is not configured"

@@ -1,120 +1,90 @@
-"""Ollive OSS Inference Backend on Modal.
+"""Ollive OSS Inference — Modal + vLLM.
 
-Serves Qwen2.5-3B-Instruct on an A10G with a single FastAPI endpoint. This is
-the self-hosted OSS path for the chat + Underwriter eval.
+Serves Qwen3-8B on an A10G via vLLM, exposing an OpenAI-compatible API at
+/v1/chat/completions. vLLM's continuous batching handles concurrent requests.
 
 Deploy:
     modal deploy modal-app/qwen_app.py
 
-Modal will print a URL like:
-    https://<user>--ollive-qwen-qwenserver-generate.modal.run
+Modal prints the endpoint URL. Set it as MODAL_OSS_URL in platform/.env and
+restart the gateway. The served model name is 'Qwen/Qwen3-8B'.
 
-Set that as MODAL_OSS_URL in platform/.env, restart the gateway, and the chat's
-"Qwen 2.5 3B" entry routes here.
+Cost: A10G at ~$1.10/hr, charged per-second. Scales to zero after
+scaledown_window of idle.
 
-Cost: A10G at ~$1.10/hr, charged per-second of active runtime. The container
-scales to zero after `scaledown_window` seconds of idle (default 5 min here),
-so a full Loom demo session typically costs < $0.30. Stop the app entirely
-when done:
-    modal app stop ollive-qwen
+Thinking mode: Qwen3 supports extended chain-of-thought. This endpoint runs
+in standard (non-thinking) mode by default. To enable thinking for a request:
+    extra_body={"chat_template_kwargs": {"enable_thinking": True}}
 """
 
 from __future__ import annotations
 
+import subprocess
+
 import modal
 
-MODEL_ID = "Qwen/Qwen2.5-3B-Instruct"
-MAX_NEW_TOKENS = 512
-TEMPERATURE = 0.7
+MINUTES = 60
 
-SYSTEM_PROMPT = (
-    "You are a helpful, honest, and careful assistant. Hold a natural multi-turn "
-    "conversation and remember what the user told you earlier. If unsure of a fact, "
-    "say so rather than guessing."
-)
+MODEL_ID = "Qwen/Qwen3-8B"
+MAX_MODEL_LEN = 16_384   # 16 k context fits on A10G with ~1.75 GiB KV cache
 
-app = modal.App("ollive-qwen")
+app = modal.App("ollive-oss-inference")
 
-
-def _download_weights() -> None:
-    """Bake Qwen weights into the image so containers cold-start from disk,
-    not from a 6 GB HF download (~30 s → ~10 s)."""
-    from huggingface_hub import snapshot_download
-
-    snapshot_download(MODEL_ID, ignore_patterns=["*.pt", "*.bin"])  # safetensors only
-
+# Persistent volume — model downloads once on first deploy, reused after.
+hf_cache = modal.Volume.from_name("ollive-hf-cache", create_if_missing=True)
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install(
-        "transformers>=4.45",
-        "torch>=2.4",
-        "accelerate>=0.34",
+        "vllm>=0.8",
         "huggingface_hub[hf_transfer]>=0.26",
-        "fastapi[standard]>=0.115",
     )
-    .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})  # faster snapshot download at build
-    .run_function(_download_weights)
+    .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
 )
 
+_VLLM_CMD = " ".join([
+    "vllm", "serve", MODEL_ID,
+    "--host", "0.0.0.0",
+    "--port", "8000",
+    "--dtype", "auto",
+    "--max-model-len", str(MAX_MODEL_LEN),
+    "--served-model-name", MODEL_ID,
+    "--trust-remote-code",
+    "--async-scheduling",
+    "--uvicorn-log-level", "warning",
+])
 
-@app.cls(
+
+@app.function(
     image=image,
     gpu="A10G",
-    scaledown_window=300,  # keep warm 5 min after last request
-    timeout=120,            # per-request cap
+    scaledown_window=5 * MINUTES,
+    timeout=10 * MINUTES,
+    max_containers=1,
+    volumes={"/root/.cache/huggingface": hf_cache},
 )
-class QwenServer:
-    @modal.enter()
-    def load(self) -> None:
-        """Loads Qwen onto the GPU exactly once per container lifetime."""
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+@modal.concurrent(max_inputs=50)
+@modal.web_server(port=8000, startup_timeout=10 * MINUTES)
+def serve():
+    """Start vLLM; @modal.web_server proxies port 8000 once it's healthy."""
+    subprocess.Popen(_VLLM_CMD, shell=True)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.float16,
-            device_map="cuda",
-        )
 
-    @modal.fastapi_endpoint(method="POST")
-    def generate(self, body: dict) -> dict:
-        """POST {prompt, system} → {text, latency_s, completion_tokens}.
+@app.local_entrypoint()
+def smoke_test():
+    """Quick sanity check: modal run modal-app/qwen_app.py"""
+    import urllib.request, json  # noqa: E401
 
-        A small, stable response contract so the platform's OSS backend depends
-        on the shape, not on the host.
-        """
-        import time
-
-        import torch
-
-        prompt = body.get("prompt", "") or ""
-        system = body.get("system", "") or SYSTEM_PROMPT
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": prompt},
-        ]
-
-        t0 = time.perf_counter()
-        text = self.tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-        with torch.no_grad():
-            out = self.model.generate(
-                **inputs,
-                max_new_tokens=MAX_NEW_TOKENS,
-                temperature=TEMPERATURE,
-                do_sample=TEMPERATURE > 0,
-                pad_token_id=self.tokenizer.eos_token_id,
-            )
-        new_tokens = out[0][inputs["input_ids"].shape[1]:]
-        reply = self.tokenizer.decode(new_tokens, skip_special_tokens=True)
-        latency = time.perf_counter() - t0
-
-        return {
-            "text": reply,
-            "latency_s": round(latency, 3),
-            "completion_tokens": int(len(new_tokens)),
-        }
+    url = serve.get_web_url()
+    req = urllib.request.Request(
+        f"{url}/v1/chat/completions",
+        data=json.dumps({
+            "model": MODEL_ID,
+            "messages": [{"role": "user", "content": "Reply with exactly: OK"}],
+            "max_tokens": 8,
+            "temperature": 0,
+        }).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    resp = json.loads(urllib.request.urlopen(req).read())
+    print(resp["choices"][0]["message"]["content"])
