@@ -176,11 +176,13 @@ insurance premium tier. The two assistants are the subjects under test; the
 harness is the product.
 
 **Assistants under test:**
-- **Frontier**: `openai/gpt-4.1` via OpenRouter
-- **OSS**: `Qwen/Qwen2.5-3B-Instruct` — self-hosted on Modal (vLLM behind a
-  Modal endpoint), exposed to the harness via a small
-  `{prompt, system} → {text, latency, tokens}` API. Also evaluated
-  `meta-llama/llama-3.2-3b-instruct` via OpenRouter as a secondary OSS baseline.
+- **Frontier**: `google/gemini-2.5-flash` and `openai/gpt-4o-mini` via OpenRouter
+  (cheap-tier closed-source models — the ones actually shipped in the chat UI).
+- **OSS**: `Qwen/Qwen3-8B` — self-hosted on Modal (vLLM behind a Modal endpoint
+  serving the **OpenAI-compatible `/v1` API**, so the harness reaches it through the
+  same `OpenAICompatibleBackend` as every other provider — no custom client). Falls
+  back to `qwen/qwen3-8b` on OpenRouter if the endpoint is cold/down; a secondary
+  OSS baseline, `google/gemma-3-12b-it`, is also available via OpenRouter.
   Deployment, cost, and operational notes: [`modal-app/README.md`](modal-app/README.md).
 
 **Evaluation framework** — four risk axes (hallucination, bias & harmful output,
@@ -206,60 +208,75 @@ JSON to the web Evaluation tab.
 
 ### What we observed
 
-**Run: N=8/suite, GPT-4.1 + Gemini 2.5 Flash judges, seed=7**
+**Run: N=113 (30 bias · 30 factual · ~31 jailbreak · 23 sensitive), GPT-4.1 +
+Gemini 2.5 Flash judges, T=0, seed=7** — published in the web Evaluation tab and
+`web/public/eval-scorecard.json`.
 
-| Model | Index (off) | Index (on) | Tier | Overall risk |
+| Model | Index (off) | Index (on) | Tier (off) | Overall risk (off) |
 |---|---|---|---|---|
-| GPT-4.1 (Frontier) | **99** | 99 | Preferred | 0.009 |
-| Llama 3.2 3B (OSS) | **91** | 97 | Preferred | 0.088 |
-| Qwen 2.5 3B (OSS) | **88** | 97 | Preferred | 0.124 |
+| GPT-4o-mini (Frontier) | **88** | 87 | Preferred | 0.116 |
+| Gemini 2.5 Flash (Frontier) | **86** | 88 | Preferred | 0.144 |
+| Qwen3-8B (OSS, self-hosted) | **68** | 87 | Substandard | 0.316 |
 
-**Dominant failure mode: sensitive-data disclosure**
+**Per-axis risk (guardrails off)** — risk 0–1, higher = worse; κ = inter-judge agreement:
 
-All three models score near-zero on hallucination, bias (except Qwen), and content
-safety at this N. The real differentiation is on sensitive-data disclosure:
-
-| Model | Sensitive risk (off) | Fail rate | κ |
+| Axis | GPT-4o-mini | Gemini 2.5 Flash | Qwen3-8B |
 |---|---|---|---|
-| GPT-4.1 | 0.037 | 0.000 | 0.00 |
-| Llama 3.2 3B | 0.260 | 0.250 | 0.73 |
-| Qwen 2.5 3B | **0.400** | **0.375** | 1.00 |
+| Hallucination | 0.086 (κ=0.46) | 0.000 (κ=1.00) | 0.189 (κ=0.67) |
+| Bias | 0.042 (κ=0.47) | 0.000 (κ=1.00) | 0.065 (κ=0.30) |
+| Content Safety | 0.142 (κ=0.72) | 0.152 (κ=0.71) | 0.235 (κ=0.66) |
+| Sensitive-Data | 0.152 (κ=0.62) | 0.363 (κ=0.92) | **0.706 (κ=0.61)** |
 
-Qwen failed 3 of 8 sensitive-data prompts. κ=1.00 means both independent judges
-agreed on every single verdict — this is not noise. Llama failed 2 of 8 (κ=0.73,
-good agreement). GPT-4.1 had near-zero exposure.
+**Dominant failure mode: sensitive-data disclosure.** Qwen3-8B leaked on **65% of
+the sensitive-data prompts** (risk 0.706) — by far the largest single contributor to
+its 0.316 overall risk. It is also weaker on content safety (0.235) and hallucination
+(0.189). The frontier models score zero on bias and hallucination (κ=1.00) and stay
+low elsewhere; even Gemini carries a non-trivial sensitive-data risk (0.363).
 
-Qwen also showed meaningful bias risk (0.158, fail_rate=0.125, κ=1.00 — again,
-full judge agreement). Llama and GPT-4.1 scored zero on bias.
+**Guardrail effect — this is the headline.** The guardrail layer transforms the OSS
+model and barely touches the already-safe frontier ones:
 
-**Guardrail effect**
+| Model | Overall risk (off → on) | Sensitive (off → on) | Index Δ |
+|---|---|---|---|
+| GPT-4o-mini | 0.116 → 0.129 | 0.152 → 0.147 | −1 |
+| Gemini 2.5 Flash | 0.144 → 0.119 | 0.363 → 0.262 | +2 |
+| Qwen3-8B | 0.316 → 0.132 | **0.706 → 0.081** | **+19** |
 
-The guardrail layer almost completely eliminates the sensitive-data problem:
-Qwen's sensitive risk drops from 0.400 to ~0.025 (+9 index points), Llama's from
-0.260 to ~0.010 (+6 index points). GPT-4.1 gains nothing because it had no
-meaningful risk to begin with.
+Qwen3-8B's sensitive-data risk collapses from 0.706 to 0.081, dropping overall risk
+from 0.316 → 0.132 and lifting the index **68 → 87 (+19) — Substandard to Preferred**,
+level with the frontier models. The frontier models barely move (Gemini +2,
+GPT-4o-mini −1); on GPT-4o-mini the guardrail's benign-prompt caution slightly
+*raises* measured risk (a small over-refusal cost) — a real tradeoff the A/B exists
+to surface.
 
 **The underwriting answer:**
-> OSS 3B models are insurable at Preferred tier, but only with guardrails enabled.
-> Without them, sensitive-data exposure is 7–11× higher than GPT-4.1. The guardrail
-> layer closes that gap almost entirely, justifying a premium discount equivalent
-> to a 6–9 point index uplift.
+> An 8B OSS model is **not** insurable at Preferred tier on its own — at index 68 it
+> prices as Substandard, driven mostly by sensitive-data disclosure (it leaked on 65%
+> of those prompts). But a single guardrail layer closes almost the entire gap: +19
+> index points lands it at Preferred (87), level with the frontier models. The
+> guardrail is the difference between an uninsurable and an insurable OSS deployment —
+> and it costs nothing to run.
 
-**Cost and latency:**
+**Cost and latency (guard off):**
 
 | Model | Cost/req | Avg latency |
 |---|---|---|
-| GPT-4.1 | $0.00077 | 2.79s |
-| Llama 3.2 3B | ~$0.00002 | 0.89s |
-| Qwen 2.5 3B (OSS) | GPU-time | 2.15s* |
+| GPT-4o-mini | OpenRouter, ~$0.0001 | 3.75s |
+| Gemini 2.5 Flash | $0.00101 | 3.32s |
+| Qwen3-8B (OSS, Modal A10G) | GPU-time (~$1.10/hr, scale-to-zero) | 27.3s* |
 
-<sub>*OSS latency was measured on the earlier HF Space deployment. The risk
-scores are deployment-independent (same weights, T=0); only latency is
-hardware-bound. Modal warm latency is comparable (~0.8–2 s).</sub>
+<sub>*Qwen3-8B latency here is the **full per-item** wall time over multi-turn eval
+prompts on a single A10G with vLLM (cold-start amortised, no batching tuning), not a
+single-shot warm call. Warm single-turn chat latency is far lower (~0.8–2 s). The
+risk scores are deployment-independent (same weights, T=0); only latency is
+hardware-bound. Cost for the two frontier models reflects the catalog at run time —
+GPT-4o-mini was the frontier model in this run; the current config ships GPT-4.1-mini,
+which the next run will pick up.</sub>
 
-OSS models are 40–400× cheaper per request. For an insurer pricing AI risk,
-the calculus is: OSS saves cost but carries higher inherent risk; guardrails
-are the mitigation that makes OSS viable at Preferred tier rates.
+Self-hosting trades per-token cost for fixed GPU-time and operational latency. For an
+insurer pricing AI risk, the calculus is: OSS removes per-call vendor cost but carries
+higher inherent risk; the guardrail is the cheap mitigation that makes OSS viable at
+Preferred-tier rates.
 
 ### Evaluation methodology
 
@@ -275,14 +292,14 @@ full scoring pipeline. Summary:
 
 ### What I'd improve with more time
 
-- **Larger N** — 8 items/suite gives wide CIs. 50+ items/suite would tighten
-  them to ±0.05 risk, turning directional signals into certifiable findings.
+- **Tighter CIs / larger N** — N=113 gives directional findings; 50+ items *per
+  suite* would tighten the bootstrap CIs enough to turn them into certifiable claims.
 - **Temperature sweep** — T=0 measures modal behaviour. A sweep over T=0, 0.3,
   0.7 would characterise worst-case sampling, which matters more for insurance
   than best-case.
-- **Bigger OSS models** — Qwen 2.5 7B or 14B would narrow the gap to GPT-4.1
-  significantly while remaining self-hostable. A Modal A10G handles 7B; 14B
-  needs a larger GPU tier.
+- **Bigger / quantised OSS models** — Qwen3-14B or a quantised 32B would likely
+  close the jailbreak gap to the frontier models while staying self-hostable;
+  14B fits an A10G at lower precision, larger needs an A100 tier.
 - **Red-teaming** — the jailbreak suite covers known techniques; a dedicated
   red-team pass with novel prompts would stress-test the guardrail more honestly.
 - **Longitudinal tracking** — re-run on every model version update and track
@@ -332,7 +349,7 @@ platform/
 ├── llmobs/              # observability SDK: capture, redact, queue, flush
 ├── beacon/              # gateway · ingestion · worker · Postgres/Alembic
 ├── underwriter/         # eval harness: suites · judges · scoring · report
-├── modal-app/           # Modal app serving the self-hosted OSS model (Qwen2.5-3B)
+├── modal-app/           # Modal app serving the self-hosted OSS model (Qwen3-8B, vLLM)
 ├── web/                 # React + Vite + Tailwind SPA
 └── deploy/              # docker-compose · k8s kustomize manifests
 ```

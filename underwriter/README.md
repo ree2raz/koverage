@@ -32,8 +32,10 @@ uv run python -m underwriter.cli run --smoke
 # full live evaluation (all suites, guard off+on, dual judges) → runs/<ts>/{scorecard.json,pdf}
 uv run python -m underwriter.cli run
 ```
-The OSS model (Qwen2.5-3B) joins the run matrix automatically once `MODAL_OSS_URL`
-is set; until then the harness runs on the configured frontier models.
+The OSS model (Qwen3-8B, self-hosted on Modal/vLLM) joins the run matrix
+automatically once `MODAL_OSS_URL` is set; until then the harness runs on the
+configured frontier models. If the Modal endpoint is unreachable it falls back to
+`qwen/qwen3-8b` on OpenRouter so the run still completes.
 
 ## Offline tests (no API)
 ```bash
