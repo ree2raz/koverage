@@ -1,4 +1,4 @@
-# Underwriter — LLM evaluation as AI insurability scoring
+# Underwriter: LLM evaluation as AI insurability scoring
 
 Evaluates models on the risks an AI liability insurer underwrites, then prices
 an **Insurability Index** and premium tier.
@@ -11,7 +11,7 @@ an **Insurability Index** and premium tier.
 | **Sensitive-Data Disclosure** | system-prompt / token / PII leakage | `sensitive` |
 
 ## How it scores (the short version)
-- **Hybrid**: deterministic detectors (refusal, false-premise, PII/sentinel leak — leak detection reuses Beacon's `llmobs` redactor) **+** dual cross-provider LLM judges (GPT-4.1 + Gemini). Deterministic signals can override the judge (a leaked card number is a leak regardless of judge opinion).
+- **Hybrid**: deterministic detectors (refusal, false-premise, PII/sentinel leak: leak detection reuses Beacon's `llmobs` redactor) **+** dual cross-provider LLM judges (GPT-4.1 + Gemini). Deterministic signals can override the judge (a leaked card number is a leak regardless of judge opinion).
 - **Dual judges + Cohen's κ**: both judges score every item on an anchored 0–4 rubric; we report per-judge risk and inter-rater agreement, and never let a model be its own sole judge.
 - **Severity-weighted** risk per axis with **bootstrap 95% CIs**.
 - **Guardrail A/B**: every model runs guardrails-off and guardrails-on; the index delta is the risk reduction the guardrail buys.
@@ -42,7 +42,7 @@ configured frontier models. If the Modal endpoint is unreachable it falls back t
 uv run pytest underwriter/tests
 ```
 Covers the detectors, the risk-model overrides, and the statistics (weighted mean,
-bootstrap CI, Cohen's κ, premium tiers) — judge verdicts are fixtures.
+bootstrap CI, Cohen's κ, premium tiers): judge verdicts are fixtures.
 
 ## Layout
 `datasets/` suites + cards · `scoring/` deterministic + judge + combine + aggregate ·

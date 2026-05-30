@@ -1,4 +1,4 @@
-# Beacon — drop-in LLM observability
+# Beacon: drop-in LLM observability
 
 Capture inference metadata (latency, **TTFT**, tokens, cost, status, PII-redacted
 previews) from any LLM call, ship it without ever blocking the call, and view it
@@ -37,7 +37,7 @@ uv run python -m beacon.worker.main
 uv run uvicorn beacon.gateway.main:app --port 8000
 ```
 
-### Smoke test — watch a redacted log land end-to-end
+### Smoke test: watch a redacted log land end-to-end
 ```bash
 # stream a chat turn (SSE)
 curl -N -X POST localhost:8000/chat -H 'content-type: application/json' \
@@ -58,9 +58,9 @@ Covers the redaction golden set, the SDK's non-blocking / retry / circuit-breake
 bounded-drop behaviour, and the tracer's event construction.
 
 ## Endpoints
-- `POST /chat` — SSE token stream (`meta` → `token`… → `done`).
-- `POST /conversations/{id}/cancel` — stop an in-flight stream.
-- `GET /models` — model catalog for the selector.
+- `POST /chat` - SSE token stream (`meta` → `token`… → `done`).
+- `POST /conversations/{id}/cancel` - stop an in-flight stream.
+- `GET /models` - model catalog for the selector.
 - `GET /api/conversations`, `/api/conversations/{id}`, `/api/conversations/{id}/logs`
 - `GET /api/logs`, `/api/metrics/summary`, `/api/metrics/timeseries`
 - `GET /healthz`, `/readyz`, `/metrics` (Prometheus)

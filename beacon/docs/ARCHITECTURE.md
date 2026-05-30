@@ -1,4 +1,4 @@
-# Beacon — Architecture Notes
+# Beacon: Architecture Notes
 
 Beacon is a drop-in LLM observability pipeline: an SDK captures inference
 metadata at the call site, ships it without blocking the caller, and an
@@ -19,8 +19,8 @@ React (Vite)            Chat gateway (FastAPI)            Ingestion (FastAPI)   
 ## Ingestion flow
 
 1. The **gateway** makes an LLM call; the **llmobs SDK** wraps it in a `trace()` span.
-2. The span captures metadata — model, provider, latency, **TTFT**, tokens, cost,
-   status — **redacts PII in-process**, builds previews, and `emit()`s the event
+2. The span captures metadata (model, provider, latency, **TTFT**, tokens, cost,
+   status) **redacts PII in-process**, builds previews, and `emit()`s the event
    onto a bounded in-memory queue. `emit()` returns immediately.
 3. A background flusher batches events and `POST`s them to the **ingestion API**.
 4. Ingestion authenticates (`x-api-key`), validates each event (Pydantic), and
@@ -31,7 +31,7 @@ React (Vite)            Chat gateway (FastAPI)            Ingestion (FastAPI)   
    only **after** the DB write (at-least-once). Poison messages → DLQ.
 
 Chat state (`conversations`, `messages`) is written **synchronously by the
-gateway** — it must be exact for resume/cancel. Observability (`inference_logs`)
+gateway**; it must be exact for resume/cancel. Observability (`inference_logs`)
 flows the async path and is best-effort; losing a log never corrupts a chat.
 
 ## Logging strategy
@@ -56,7 +56,7 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
   queries use `percentile_cont` + `date_trunc` rollups; indexes on
   `(ts, provider, model)` keep them cheap at current volume. **Scale-out path:**
   swap the analytics reads for a ClickHouse `MergeTree` fed by the same topic
-  (Kafka-engine table → materialized rollups) behind the identical read API —
+  (Kafka-engine table → materialized rollups) behind the identical read API,
   documented as the next step rather than built, to keep the surface honest.
 - **Bounded SDK queue + sampling** cap the client-side memory and egress cost.
 
@@ -76,7 +76,7 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
 
 ## Schema design decisions
 
-- **Two write paths by guarantee** (synchronous chat state vs async observability) —
+- **Two write paths by guarantee** (synchronous chat state vs async observability):
   the core tradeoff, made explicit.
 - **Previews, not raw content.** The observability path stores only redacted,
   truncated previews; full content lives only in `messages` (the chat record).
@@ -84,12 +84,12 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
   removes the conversation and its `messages` (the chat record, cascade), but
   **leaves `inference_logs` intact**. This is deliberate: the two write paths have
   different lifecycles. Chat state is user-owned and disposable; `inference_logs`
-  is an *append-only operational audit stream* — latency, cost, error, and PII-control
-  receipts that ops and finance rely on. If deleting a chat retroactively erased its
+  is an *append-only operational audit stream* (latency, cost, error, and PII-control
+  receipts that ops and finance rely on). If deleting a chat retroactively erased its
   logs, historical dashboards (p95 latency, cost-by-model, error rate for a past
   window) would silently change every time a user pruned history, which defeats the
-  purpose of an audit trail. The logs already hold no raw content — only redacted
-  previews — so retention is privacy-safe. The cost is a dangling
+  purpose of an audit trail. The logs already hold no raw content, only redacted
+  previews, so retention is privacy-safe. The cost is a dangling
   `inference_logs.conversation_id` whose trace view 404s; `conversation_id` is
   therefore an intentionally *soft* reference, not a foreign key. For a strict
   right-to-erasure requirement the documented next step is a soft-delete that nulls
@@ -113,7 +113,7 @@ the SQL query.
 
 **SSE silent failure on DB errors.** If the database was unavailable, `chat_stream`
 raised before its first `yield`, producing an HTTP 200 with an empty body. The
-browser's `EventSource` saw no events and no error — the UI just hung silently.
+browser's `EventSource` saw no events and no error: the UI just hung silently.
 Fixed by wrapping the entire generator body in `try/except` that yields an `error`
 SSE frame. Lesson: async generators need top-level error handling; exceptions before
 the first yield are invisible to the consumer.
