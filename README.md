@@ -327,8 +327,8 @@ docker compose -f deploy/docker-compose.yml up --build
 # 4. Run evaluation (OSS + Frontier)
 uv run python -m underwriter.cli run --n 8
 
-# 5. Generate PDF report
-uv run python -m underwriter.cli report
+# 5. View the report (PDF is written automatically by `run`)
+ls -la underwriter/runs/*/scorecard.pdf
 ```
 
 ## Tests

@@ -246,7 +246,7 @@ across hallucination/bias/safety/sensitive, dual LLM-as-judge, and the 1-page re
 
 ### Scene 6 — The 1-page report PDF + cost/latency (~45s)
 **Caption:** `1-page scorecard + cost & latency table`
-1. Open `web/public/eval-scorecard.pdf` (or generate fresh: `uv run python -m underwriter.cli report`).
+1. Open `web/public/eval-scorecard.pdf` (or generate fresh: `uv run python -m underwriter.cli demo`).
 2. Pan the PDF: KPI row, the four chart panels (risk-by-axis, index off/on, guardrail
    reduction, cost × latency × risk), recommendation callout.
 3. Pause on the **cost + latency** comparison (OSS vs frontier).
