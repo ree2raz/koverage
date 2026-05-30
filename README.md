@@ -1,5 +1,15 @@
 # Koverage: Observe Every Call, Score Every Model
 
+> **Research & Educational Use Notice**
+> This repository contains adversarial prompts (jailbreak attempts, harmful-instruction probes,
+> sensitive-data elicitation) used exclusively as **evaluation fixtures** for the Underwriter
+> safety-scoring harness. No prompt is intended to elicit harmful output for real use; every
+> prompt exists solely to measure whether a model's safety controls hold under stress.
+> This is standard practice in AI safety research and red-teaming literature
+> (see: [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/),
+> [Anthropic Red-Teaming](https://www.anthropic.com/research/red-teaming-language-models-to-reduce-harms)).
+> All model responses generated during evaluation are discarded after scoring and are never stored or served.
+
 ![Koverage architecture infographic](infographic.png)
 
 ## TL;DR
