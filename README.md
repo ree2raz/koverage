@@ -1,4 +1,4 @@
-# Ollive Platform — Observe and Judge Every LLM Call
+# Ollive Platform — Observe Every Call, Score Every Model
 
 ## TL;DR
 
@@ -30,9 +30,10 @@ flowchart LR
         M["AI models<br/>open-source vs frontier"] --> W["Underwriter<br/>safety exam:<br/>lies · bias · unsafe · leaks"]
         W --> R["One risk score<br/>+ 1-page report"]
     end
-
-    C -. "which model?" .-> M
 ```
+
+*Two independent flows. They don't pass requests to each other — they just share
+the same underlying code (model routing + cost math).*
 
 **Why two halves?** Beacon watches AI *while it runs*; Underwriter judges a model
 *before you trust it*. Together they cover the whole lifecycle: pick a safe model,
