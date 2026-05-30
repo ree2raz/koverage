@@ -1,5 +1,7 @@
 # Koverage: Observe Every Call, Score Every Model
 
+![Koverage architecture infographic](infographic.png)
+
 ## TL;DR
 
 Any company building on AI has to answer two practical questions. This project
