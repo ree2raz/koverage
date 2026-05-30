@@ -10,8 +10,10 @@ function parseFrame(frame: string): SSEMessage | null {
   let event = "message";
   const dataLines: string[] = [];
   for (const line of frame.split("\n")) {
+    if (line.startsWith(":")) continue; // SSE comment — ignore
     if (line.startsWith("event:")) event = line.slice(6).trim();
     else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+    // id: and retry: are valid SSE fields; parsed but not currently consumed
   }
   if (dataLines.length === 0) return null;
   const raw = dataLines.join("\n");

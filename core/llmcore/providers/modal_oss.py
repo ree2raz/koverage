@@ -11,12 +11,15 @@ storms), and `scaledown_window` keeps the container warm across requests.
 
 from __future__ import annotations
 
+import logging
 import random
 import sys
 import time
 from collections.abc import Iterator
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 from ..types import Message, ModelResponse, Role, StreamPiece, Usage
 
@@ -37,6 +40,7 @@ class ModalBackend:
     ) -> None:
         self.endpoint_url = endpoint_url.rstrip("/")
         self.model_id = model_id
+        self.model = model_id  # satisfies ModelBackend.model protocol attribute
         self.provider = "oss"
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
@@ -82,6 +86,11 @@ class ModalBackend:
         raise last_exc  # type: ignore[misc]
 
     def generate(self, messages: list[Message], **kwargs) -> ModelResponse:
+        if "response_format" in kwargs:
+            log.debug(
+                "ModalBackend ignores response_format — JSON mode unsupported; "
+                "judge parser will use regex fallback"
+            )
         prompt, system = self._messages_to_prompt(messages)
         t0 = time.perf_counter()
         result = self._post_with_retry(prompt, system)

@@ -157,6 +157,12 @@ def run(
     models = models or _models_under_test()
     items = load_suites(suites, n_per_suite)
     router = Router()
+
+    if not router.settings.openrouter_api_key:
+        raise RuntimeError(
+            "OPENROUTER_API_KEY is not configured — add it to .env before running"
+        )
+
     judges = DualJudge(settings.judge_a, settings.judge_b, router=router,
                        temperature=settings.judge_temperature)
     weights = axis_weights()
@@ -166,8 +172,10 @@ def run(
     run_dir.mkdir(parents=True, exist_ok=True)
     gen_f = (run_dir / "scores.jsonl").open("w")
 
-    # background keep-alive so the Modal endpoint doesn't go cold mid-run
-    keepalive_stop = _spawn_oss_keepalive(router)
+    # background keep-alive — only useful if the OSS model is actually being tested
+    keepalive_stop = (
+        _spawn_oss_keepalive(router) if settings.oss_model in models else threading.Event()
+    )
 
     results: list[ModelResult] = []
     resolved_models: list[str] = []
