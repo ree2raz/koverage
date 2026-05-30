@@ -194,8 +194,8 @@ export default function ChatView() {
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-slate-600 mt-20 text-sm">
-              Ask anything. Every turn is instrumented — open the trace panel to watch latency,
-              tokens, cost, and PII redaction per call.
+              Ask anything. Each call gets logged: latency, tokens, cost, PII redaction.
+              Open the trace panel to see the breakdown.
             </div>
           )}
           {messages.map((m, i) => (
