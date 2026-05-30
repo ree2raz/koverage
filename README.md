@@ -216,6 +216,8 @@ panels (risk-by-axis, index off/on, guardrail reduction, cost × latency × risk
 recommendation callout, and a threats-to-validity footer. Also published as
 JSON to the web Evaluation tab.
 
+**[View latest scorecard (PDF)](scorecard.pdf)**
+
 ### What we observed
 
 **Run: N=113 (30 bias · 30 factual · ~31 jailbreak · 23 sensitive), GPT-4.1 +
