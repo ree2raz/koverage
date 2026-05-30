@@ -7,7 +7,7 @@
 > prompt exists solely to measure whether a model's safety controls hold under stress.
 > This is standard practice in AI safety research and red-teaming literature
 > (see: [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/),
-> [Anthropic Red-Teaming](https://www.anthropic.com/research/red-teaming-language-models-to-reduce-harms)).
+> [Anthropic Red-Teaming](https://red.anthropic.com/)).
 > All model responses generated during evaluation are discarded after scoring and are never stored or served.
 
 ![Koverage architecture infographic](infographic.png)
