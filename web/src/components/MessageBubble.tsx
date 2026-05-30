@@ -50,7 +50,7 @@ function parseThinking(content: string): {
 
 export default function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
-  const [showReasoning, setShowReasoning] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(true);
 
   const { answer, reasoning, thinking } = isUser
     ? { answer: message.content, reasoning: "", thinking: false }
