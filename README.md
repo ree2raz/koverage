@@ -36,9 +36,9 @@ flowchart LR
 the same underlying code (model routing + cost math).*
 
 **Why two halves?** Beacon watches AI *while it runs*; Underwriter judges a model
-*before you trust it*. Together they cover the whole lifecycle: pick a safe model,
-then keep it honest in production. They share one codebase — the chatbot, the
-model plumbing, and the cost math are written once and used by both.
+*before you trust it*. Between them they cover picking a safe model and keeping it
+honest in production. They share one codebase — the chatbot, the model plumbing,
+and the cost math are written once and used by both.
 
 ### What's in the box
 
@@ -48,9 +48,7 @@ model plumbing, and the cost math are written once and used by both.
 | **Beacon** | A flight recorder for every AI call (`llmobs/`, `beacon/`) | See speed, cost, and errors live; never lose a conversation; keep private data out of the logs |
 | **Underwriter** | A safety inspector that scores models (`underwriter/`) | Know how risky a model is *before* trusting it with real users |
 | **Shared core** | The common plumbing both halves reuse (`core/`) | Model routing and cost math written once, so nothing is built twice |
-| **Deploy** | One-command startup + cloud configs (`deploy/`) | Anyone can run the whole thing with a single command |
-
-The rest of this page explains each half in more detail.
+ | **Deploy** | One-command startup + cloud configs (`deploy/`) | Anyone can run the whole thing with a single command |
 
 ---
 

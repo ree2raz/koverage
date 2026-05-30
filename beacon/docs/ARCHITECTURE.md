@@ -102,14 +102,13 @@ flows the async path and is best-effort; losing a log never corrupts a chat.
 
 ## What we observed in production
 
-Running the full stack end-to-end surfaced several non-obvious issues that are
-worth documenting as institutional knowledge:
+Running the full stack end-to-end hit a few things worth writing down:
 
 **Postgres NUMERIC → JSON string bug.** `psycopg3` returns `decimal.Decimal` for
 `NUMERIC` columns; FastAPI's default JSON encoder serializes these as strings, not
 numbers. TypeScript received `"0.00420"` and `.toFixed()` threw at runtime, blanking
 the UI. Fixed in `read.py` with a `_coerce()` helper that converts `Decimal → float`
-before serialization. Lesson: always test the full round-trip to the UI, not just
+before serialization. Lesson: test the full round-trip to the UI, not just
 the SQL query.
 
 **SSE silent failure on DB errors.** If the database was unavailable, `chat_stream`
