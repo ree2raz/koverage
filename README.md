@@ -1,17 +1,55 @@
 # Ollive Platform — Observe and Judge Every LLM Call
 
-This is one product made of two halves that share a common LLM core. A
-multi-provider chatbot is the thing you actually use. Every call it makes is
-**watched** by Beacon and can be **graded** by Underwriter.
+## TL;DR
 
-- **Beacon** is the observability half: it records what every LLM call did —
-  how fast, how many tokens, how much it cost, whether it failed — and shows it
-  on a dashboard, all without slowing the chat down.
-- **Underwriter** is the evaluation half: it puts an open-source model and a
-  frontier model through the same safety tests and turns the results into a
-  single risk score and a one-page report.
+Any company building on AI has to answer two practical questions. This project
+answers both — and ships a working chatbot to prove it.
 
-The two sections below explain each half in plain terms.
+1. **"Is my AI healthy right now?"** → **Beacon** is a flight recorder for AI.
+   Every time the chatbot talks to a model, Beacon notes how fast it was, what it
+   cost, whether it failed, and strips out personal data — then shows it all on a
+   live dashboard. You can't run AI in production blind; this is the instrument panel.
+
+2. **"Can I trust this model in the first place?"** → **Underwriter** is a safety
+   inspector. It gives a cheap open-source model and an expensive frontier model
+   the same exam — does it make things up, show bias, follow dangerous
+   instructions, or leak secrets? — and turns the answers into one risk score and
+   a one-page report.
+
+```mermaid
+flowchart LR
+    subgraph RUN["Running live — is my AI healthy?"]
+        direction LR
+        U(["User"]) --> C["Chatbot"]
+        C --> B["Beacon<br/>records every call:<br/>speed · cost · errors · privacy"]
+        B --> D["Live dashboard"]
+    end
+
+    subgraph TRUST["Before you trust it — can I rely on this model?"]
+        direction LR
+        M["AI models<br/>open-source vs frontier"] --> W["Underwriter<br/>safety exam:<br/>lies · bias · unsafe · leaks"]
+        W --> R["One risk score<br/>+ 1-page report"]
+    end
+
+    C -. "which model?" .-> M
+```
+
+**Why two halves?** Beacon watches AI *while it runs*; Underwriter judges a model
+*before you trust it*. Together they cover the whole lifecycle: pick a safe model,
+then keep it honest in production. They share one codebase — the chatbot, the
+model plumbing, and the cost math are written once and used by both.
+
+### What's in the box
+
+| Part | In plain words | Why it exists |
+|---|---|---|
+| **Chatbot + web app** | The app you actually talk to (`web/`) | Gives us something real to observe and evaluate, not a toy demo |
+| **Beacon** | A flight recorder for every AI call (`llmobs/`, `beacon/`) | See speed, cost, and errors live; never lose a conversation; keep private data out of the logs |
+| **Underwriter** | A safety inspector that scores models (`underwriter/`) | Know how risky a model is *before* trusting it with real users |
+| **Shared core** | The common plumbing both halves reuse (`core/`) | Model routing and cost math written once, so nothing is built twice |
+| **Deploy** | One-command startup + cloud configs (`deploy/`) | Anyone can run the whole thing with a single command |
+
+The rest of this page explains each half in more detail.
 
 ---
 
