@@ -109,6 +109,7 @@ class ModalBackend:
                 completion_tokens=completion_tokens,
             ),
             latency_s=reported_latency,
+            ttft_s=reported_latency,  # single-shot POST: TTFT equals total latency
             responses=[],
         )
 

@@ -2,7 +2,7 @@
 
 Endpoints:
   POST /chat                         SSE token stream (multi-provider, instrumented)
-  POST /conversations/{id}/cancel    stop an in-flight stream
+  POST /api/conversations/{id}/cancel  stop an in-flight stream
   GET  /models                       catalog for the model selector
   GET  /api/...                      read API (conversations, logs, metrics)
   GET  /healthz, /readyz, /metrics   ops
@@ -62,7 +62,7 @@ async def chat(req: ChatRequest):
     return EventSourceResponse(chat_stream(req))
 
 
-@app.post("/conversations/{convo_id}/cancel")
+@app.post("/api/conversations/{convo_id}/cancel")
 async def cancel(convo_id: str) -> dict:
     request_cancel(convo_id)
     return {"conversation_id": convo_id, "cancelling": True}

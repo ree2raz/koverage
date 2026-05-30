@@ -26,6 +26,25 @@ DEFAULT_PATTERNS: dict[str, re.Pattern[str]] = {
 _PLACEHOLDER = "[REDACTED:{}]"
 
 
+def _luhn(digits: str) -> bool:
+    """Return True if `digits` (stripped of non-numeric characters) passes the Luhn checksum."""
+    s = 0
+    for i, d in enumerate(reversed(digits)):
+        n = int(d)
+        if i % 2 == 1:
+            n *= 2
+            if n > 9:
+                n -= 9
+        s += n
+    return s % 10 == 0
+
+
+# Per-pattern validators: match is only redacted when the validator returns True.
+_VALIDATORS: dict[str, object] = {
+    "credit_card": lambda raw: _luhn(re.sub(r"\D", "", raw)),
+}
+
+
 class Redactor:
     def __init__(self, patterns: dict[str, re.Pattern[str]] | None = None) -> None:
         self.patterns = patterns if patterns is not None else DEFAULT_PATTERNS
@@ -37,7 +56,20 @@ class Redactor:
             return text, counts
         out = text
         for kind, pattern in self.patterns.items():
-            out, n = pattern.subn(_PLACEHOLDER.format(kind), out)
+            validator = _VALIDATORS.get(kind)
+            if validator:
+                n = 0
+
+                def _replace(m: re.Match, _kind: str = kind, _val=validator) -> str:
+                    nonlocal n
+                    if _val(m.group(0)):
+                        n += 1
+                        return _PLACEHOLDER.format(_kind)
+                    return m.group(0)
+
+                out = pattern.sub(_replace, out)
+            else:
+                out, n = pattern.subn(_PLACEHOLDER.format(kind), out)
             if n:
                 counts[kind] = n
         return out, counts

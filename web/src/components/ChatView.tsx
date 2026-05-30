@@ -211,7 +211,8 @@ export default function ChatView() {
         <div className="border-t border-slate-800 px-5 py-3">
           {lastTurn && (
             <div className="mb-2 text-xs text-slate-500 tabular-nums">
-              last turn · {lastTurn.completion_tokens} tok · ${lastTurn.cost_usd.toFixed(6)} ·{" "}
+              last turn · {lastTurn.completion_tokens} tok ·{" "}
+              {lastTurn.cost_usd === 0 ? "self-hosted" : `$${lastTurn.cost_usd.toFixed(6)}`} ·{" "}
               {lastTurn.status}
             </div>
           )}

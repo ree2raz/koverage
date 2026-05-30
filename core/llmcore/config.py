@@ -19,10 +19,6 @@ class CoreSettings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     default_model: str = "openai/gpt-4.1"
 
-    # Optional direct provider keys (Underwriter judges / direct routing).
-    openai_api_key: str = ""
-    gemini_api_key: str = ""
-
     # Self-hosted OSS model, served on Modal (vLLM behind a Modal endpoint).
     oss_model: str = "Qwen/Qwen2.5-3B-Instruct"
     modal_oss_url: str = ""    # Modal @fastapi_endpoint POST URL

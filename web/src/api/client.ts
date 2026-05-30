@@ -23,7 +23,7 @@ export const api = {
     getJSON<MetricSummaryRow[]>(`/api/metrics/summary?window_minutes=${windowMinutes}`),
   timeseries: (windowMinutes = 60) =>
     getJSON<TimeseriesRow[]>(`/api/metrics/timeseries?window_minutes=${windowMinutes}`),
-  cancel: (id: string) => fetch(`/conversations/${id}/cancel`, { method: "POST" }),
+  cancel: (id: string) => fetch(`/api/conversations/${id}/cancel`, { method: "POST" }),
   deleteConversation: (id: string) => fetch(`/api/conversations/${id}`, { method: "DELETE" }),
   renameConversation: (id: string, title: string) =>
     fetch(`/api/conversations/${id}`, {
