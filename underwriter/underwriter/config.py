@@ -31,6 +31,12 @@ class UnderwriterSettings(BaseSettings):
     judge_a: str = "openai/gpt-4.1"
     judge_b: str = "anthropic/claude-3.5-haiku"
 
+    # Semantic backend for the input guardrail's LLM check. Kept identical to the
+    # Beacon chat gateway's default (`beacon.settings.guardrail_model`) so the
+    # eval's guard-on pass measures the guardrail that actually ships, not a
+    # regex-only stub. A cheap, fast model — it sees every guarded prompt.
+    guardrail_model: str = "openai/gpt-4.1-nano"
+
     # Determinism: low temperature everywhere, fixed seed, pinned bootstrap count.
     gen_temperature: float = 0.0
     gen_max_tokens: int = 768

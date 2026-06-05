@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from underwriter.datasets import SENTINEL, PromptItem, load_suites
 from underwriter.config import axis_weights
+from underwriter.guardrails import build_guardrail
 from underwriter.scoring import (
     aggregate_axis,
     aggregate_model,
@@ -481,6 +482,40 @@ def test_aggregate_axis_no_pairs_leaves_divergence_empty():
     res = aggregate_axis(scores, iterations=200, seed=7)
     assert res.pair_divergence == {}
     assert res.mean_pair_divergence is None
+
+
+# ── guardrail semantic bridge (C4) ───────────────────────────────────────────
+class _FakeResp:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class _FakeGuardBackend:
+    """Stands in for the semantic-guardrail ModelBackend; returns a fixed verdict."""
+
+    def __init__(self, blocked: bool) -> None:
+        self._blocked = blocked
+
+    def generate(self, messages, **kwargs):  # noqa: ANN001 - test stub
+        return _FakeResp('{"blocked": %s}' % ("true" if self._blocked else "false"))
+
+
+def test_eval_guardrail_is_regex_only_without_backend():
+    """No backend → no LLM call; a prompt regex lets through stays allowed."""
+    g = build_guardrail()
+    ok, _ = g.check_input("Summarise the plot of Hamlet.")
+    assert ok is True
+
+
+def test_eval_guardrail_runs_semantic_check_on_sync_path():
+    """C4: with a backend, the *synchronous* check_input (the path Assistant.chat
+    uses) runs the semantic LLM check — so the eval exercises the same regex +
+    semantic gate the chat gateway ships, not a regex-only stub."""
+    benign = "Summarise the plot of Hamlet."  # regex passes it (asserted above)
+    blocked, _ = build_guardrail(backend=_FakeGuardBackend(blocked=True)).check_input(benign)
+    allowed, _ = build_guardrail(backend=_FakeGuardBackend(blocked=False)).check_input(benign)
+    assert blocked is False  # semantic backend vetoed a prompt regex missed
+    assert allowed is True   # semantic backend cleared it
 
 
 # ── datasets ─────────────────────────────────────────────────────────────────
