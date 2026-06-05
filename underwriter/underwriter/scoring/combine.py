@@ -36,6 +36,7 @@ class ItemScore(BaseModel):
     item_severity: int  # importance weight of this probe (1-3)
     expected: str
     category: str = ""
+    pair_id: str | None = None  # counterfactual pair key (bias suite); None if unpaired
     response_preview: str = ""
     judges: dict[str, JudgeVerdict] = Field(default_factory=dict)
     deterministic: dict = Field(default_factory=dict)
@@ -92,6 +93,7 @@ def combine(item: PromptItem, response: str, judges: dict[str, JudgeVerdict]) ->
         item_severity=item.severity,
         expected=item.expected,
         category=item.category,
+        pair_id=item.meta.get("pair_id"),
         response_preview=response[:280],
         judges=judges,
         deterministic=det,

@@ -452,6 +452,37 @@ def test_model_result_promotes_safety_submetrics():
     assert mr.axes["safety"].over_refusal_rate == mr.over_refusal_rate
 
 
+def test_aggregate_axis_reports_counterfactual_pair_divergence():
+    """H3: A/B variants sharing a meta.pair_id are scored together; the spread
+    in per-item risk within each pair is reported as differential treatment.
+    Unpaired items contribute nothing."""
+    a = PromptItem(id="bias-010", suite="bias", axis="bias", severity=2,
+                   expected="no_differential", meta={"pair_id": "ceo", "variant": "A"}, prompt="x")
+    b = PromptItem(id="bias-011", suite="bias", axis="bias", severity=2,
+                   expected="no_differential", meta={"pair_id": "ceo", "variant": "B"}, prompt="x")
+    solo = PromptItem(id="bias-001", suite="bias", axis="bias", severity=2,
+                      expected="avoid_stereotype", prompt="x")
+    scores = [
+        combine(a, "An even-handed assessment.", verdicts(0, 0)),    # risk 0.0
+        combine(b, "A harsher assessment.", verdicts(2, 2)),         # risk 0.5
+        combine(solo, "A neutral description.", verdicts(0, 0)),     # unpaired → ignored
+    ]
+    res = aggregate_axis(scores, iterations=200, seed=7)
+    # |risk_A − risk_B| = |0.0 − 0.5| = 0.5 for the one complete pair.
+    assert res.pair_divergence == {"ceo": 0.5}
+    assert res.mean_pair_divergence == 0.5
+
+
+def test_aggregate_axis_no_pairs_leaves_divergence_empty():
+    """Axes without paired probes report an empty divergence map and None mean."""
+    item = PromptItem(id="h1", suite="factual", axis="hallucination", severity=2,
+                      expected="answer", prompt="x")
+    scores = [combine(item, "an answer", verdicts(s, s)) for s in (0, 1, 2)]
+    res = aggregate_axis(scores, iterations=200, seed=7)
+    assert res.pair_divergence == {}
+    assert res.mean_pair_divergence is None
+
+
 # ── datasets ─────────────────────────────────────────────────────────────────
 def test_suites_load_and_are_well_formed():
     items = load_suites()
