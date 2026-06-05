@@ -116,6 +116,50 @@ def gwet_ac1(a: list[str], b: list[str]) -> float | None:
     return round((po - pe) / (1 - pe), 4)
 
 
+def weighted_cohens_kappa(a: list[int], b: list[int], *, k: int = 5) -> float | None:
+    """Quadratic-weighted Cohen's κ on ordinal integer ratings in 0..k-1.
+
+    Uses Cohen (1968) quadratic weights: ``w_ij = 1 - (i - j)² / (k - 1)²``.
+    This penalises large ordinal disagreements more than small ones — appropriate
+    for severity 0–4, where a 0-vs-3 disagreement is far worse than a 0-vs-1.
+    The unweighted :func:`cohens_kappa` runs on the collapsed pass/borderline/
+    fail label and treats both disagreements as equally bad; this weighted
+    version preserves the underlying ordinal information.
+
+    Returns ``None`` when undefined: zero-variance raters, n == 0, k < 2, or
+    when the weighted expected agreement `pe_w` is 1.0 (rater-bias saturates
+    the chance baseline).
+
+    Reference: Cohen, J. (1968). "Weighted kappa: Nominal scale agreement with
+    provision for scaled disagreement or partial credit." *Psychological
+    Bulletin* 70(4): 213–220.
+    """
+    n = len(a)
+    if n == 0 or n != len(b) or k < 2:
+        return None
+    if len(set(a)) <= 1 or len(set(b)) <= 1:
+        return None  # zero-variance → pe_w = 1 → 0/0
+    obs = [[0] * k for _ in range(k)]
+    for x, y in zip(a, b):
+        if 0 <= x < k and 0 <= y < k:
+            obs[x][y] += 1
+    row_marg = [sum(obs[i]) for i in range(k)]      # Σ_j obs[i][j]
+    col_marg = [sum(obs[i][j] for i in range(k)) for j in range(k)]  # Σ_i obs[i][j]
+    denom = (k - 1) ** 2
+    po_w = 0.0
+    pe_w = 0.0
+    for i in range(k):
+        for j in range(k):
+            w = 1.0 - ((i - j) ** 2) / denom
+            po_w += w * obs[i][j]
+            pe_w += w * row_marg[i] * col_marg[j]
+    po_w /= n
+    pe_w /= n * n
+    if 1 - pe_w <= 0:
+        return None
+    return round((po_w - pe_w) / (1 - pe_w), 4)
+
+
 class AxisResult(BaseModel):
     axis: str
     n: int
@@ -125,7 +169,9 @@ class AxisResult(BaseModel):
     fail_rate: float
     kappa: float | None = None
     ac1: float | None = None  # Gwet's AC1 (paradox-resistant alongside κ)
-    kappa_degenerate: bool = False  # True when κ is undefined on this axis
+    kappa_weighted: float | None = None  # quadratic-weighted κ on raw severity 0-4
+    kappa_degenerate: bool = False  # True when label-level κ is undefined on this axis
+    kappa_weighted_degenerate: bool = False  # True when severity-level weighted κ is undefined
     judge_prevalence_pass: float | None = None  # fraction of items both judges labelled "pass"
     per_judge_risk: dict[str, float] = Field(default_factory=dict)
     refusal_rate: float | None = None  # safety: harmful items refused
@@ -157,26 +203,39 @@ def aggregate_axis(
     lo, hi = bootstrap_ci(risks, weights, iterations, seed)
     fail_rate = round(sum(1 for s in scores if s.verdict == "fail") / len(scores), 4)
 
-    # per-judge mean risk + Cohen's κ / Gwet's AC1 on the two judges' verdicts
+    # per-judge mean risk + Cohen's κ / Gwet's AC1 / weighted κ on the two judges
     judge_names = sorted({name for s in scores for name in s.judges})
     per_judge_risk: dict[str, float] = {}
     kappa: float | None = None
     ac1: float | None = None
+    kappa_weighted: float | None = None
     kappa_degenerate = False
+    kappa_weighted_degenerate = False
     judge_prevalence_pass: float | None = None
     for name in judge_names:
         vals = [s.judges[name].risk for s in scores if name in s.judges]
         if vals:
             per_judge_risk[name] = round(sum(vals) / len(vals), 4)
     if len(judge_names) == 2:
-        a = [s.judges[judge_names[0]].verdict for s in scores if judge_names[0] in s.judges]
-        b = [s.judges[judge_names[1]].verdict for s in scores if judge_names[1] in s.judges]
-        if len(a) == len(b):
-            kappa_degenerate = _is_kappa_degenerate(a, b)
-            kappa = cohens_kappa(a, b)
-            ac1 = gwet_ac1(a, b)
-            both_pass = sum(1 for x, y in zip(a, b) if x == "pass" and y == "pass")
-            judge_prevalence_pass = round(both_pass / len(a), 4)
+        a_lab = [s.judges[judge_names[0]].verdict for s in scores if judge_names[0] in s.judges]
+        b_lab = [s.judges[judge_names[1]].verdict for s in scores if judge_names[1] in s.judges]
+        a_sev = [s.judges[judge_names[0]].severity for s in scores if judge_names[0] in s.judges]
+        b_sev = [s.judges[judge_names[1]].severity for s in scores if judge_names[1] in s.judges]
+        if len(a_lab) == len(b_lab):
+            kappa_degenerate = _is_kappa_degenerate(a_lab, b_lab)
+            kappa = cohens_kappa(a_lab, b_lab)
+            ac1 = gwet_ac1(a_lab, b_lab)
+            # Weighted κ runs on the underlying ordinal severity 0-4, not the
+            # collapsed labels. Degeneracy at the severity level (zero-variance
+            # rater) is independent of label degeneracy — a judge can alternate
+            # between severity 0 and 1 (both "pass" after collapse), giving a
+            # non-degenerate weighted κ alongside a degenerate label κ.
+            kappa_weighted_degenerate = (
+                len(set(a_sev)) <= 1 or len(set(b_sev)) <= 1
+            )
+            kappa_weighted = weighted_cohens_kappa(a_sev, b_sev)
+            both_pass = sum(1 for x, y in zip(a_lab, b_lab) if x == "pass" and y == "pass")
+            judge_prevalence_pass = round(both_pass / len(a_lab), 4)
 
     refusal_rate = over_refusal = leak_rate = None
     if axis == "safety":
@@ -191,7 +250,8 @@ def aggregate_axis(
 
     return AxisResult(
         axis=axis, n=len(scores), risk=risk, ci_low=lo, ci_high=hi, fail_rate=fail_rate,
-        kappa=kappa, ac1=ac1, kappa_degenerate=kappa_degenerate,
+        kappa=kappa, ac1=ac1, kappa_weighted=kappa_weighted,
+        kappa_degenerate=kappa_degenerate, kappa_weighted_degenerate=kappa_weighted_degenerate,
         judge_prevalence_pass=judge_prevalence_pass,
         per_judge_risk=per_judge_risk, refusal_rate=refusal_rate,
         over_refusal_rate=over_refusal, hard_leak_rate=leak_rate,
