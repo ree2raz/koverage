@@ -26,9 +26,10 @@ class UnderwriterSettings(BaseSettings):
     oss_fallback_model: str = "qwen/qwen3-8b"
 
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)
-    # the models under test, so no assistant grades itself or its sibling.
+    # the models under test, so no assistant grades itself or its sibling. The
+    # pair is rotated if either judge model is added to models_under_test.
     judge_a: str = "openai/gpt-4.1"
-    judge_b: str = "google/gemini-2.5-flash"
+    judge_b: str = "anthropic/claude-3.5-haiku"
 
     # Determinism: low temperature everywhere, fixed seed, pinned bootstrap count.
     gen_temperature: float = 0.0

@@ -37,6 +37,14 @@ Models under test:
 | **Content Safety** | Jailbreak resistance AND over-refusal | Safety failure costs + usability loss |
 | **Sensitive-Data Disclosure** | Leaked PII, confidential markers, planted data | Privacy liability, GDPR/CCPA exposure |
 
+> **Content Safety conflates two failure modes.** The composite safety risk
+> averages jailbreak-resistance items (refusal = correct) with over-refusal
+> controls (refusal = incorrect, hurts customer experience). A model that
+> resists every jailbreak but refuses every benign prompt lands at a middling
+> number that hides both. `refusal_rate` and `over_refusal_rate` are surfaced
+> as first-class fields on the model so the cause of a high score can be
+> inspected — jailbreak success vs. usability cost — instead of averaged away.
+
 ---
 
 ## 3. Hybrid scoring pipeline
@@ -68,13 +76,24 @@ Prompt item
 
 ## 4. Judge reliability
 
-- **No model is its own sole judge.** Two judges from different providers (OpenAI,
-  Google) score every item. Per-judge risk is reported so self-preference is visible.
+- **No model is its own sole judge.** Two judges from different providers
+  (`openai/gpt-4.1` + `anthropic/claude-3.5-haiku`) score every item. Per-judge
+  risk is reported so self-preference is visible. The previous pairing
+  (`gpt-4.1` + `gemini-2.5-flash`) was rotated because Gemini was also a model
+  under test — a model grading its own outputs sits on top of the headline
+  bias/hallucination numbers (self-preference bias, arXiv).
 - **Cohen's κ** between the two judges' verdicts per axis quantifies agreement.
-  κ=1.00 = perfect agreement, κ=0 = chance-level agreement. A low κ means that
-  axis's number is soft, and we say so rather than hide it.
-- **Judge B switched to `gemini-2.5-flash`** (from Pro) for cost efficiency.
-  Flash is ~10× cheaper with minimal quality loss on rubric-based scoring tasks.
+  κ is *undefined* on a zero-variance axis (all items the same label, or one
+  rater with zero variance): `pe → 1.0` and `(po − pe)/(1 − pe)` is 0/0. In
+  that case κ is reported as `n/a` with a `kappa_degenerate: true` flag.
+  A κ=1.00 on a degenerate axis means **no positive case was observed** —
+  judges never had a hard item to disagree on — *not* that agreement is
+  perfect on the cases that matter.
+- **Gwet's AC1** is reported alongside κ. AC1 is paradox-resistant: at
+  extreme base rates it stays well-defined where κ collapses. AC1=1.00 on
+  the same degenerate axis still means "no failure observed"; we surface the
+  per-axis `judge_prevalence_pass` so the reader can see whether the
+  agreement is on a hard case or on a case that never appeared.
 
 ---
 
@@ -130,7 +149,13 @@ Flash judges, T=0.** Published in the web Evaluation tab and
 The OSS model is the outlier: guard-off it prices as **Substandard**, while the
 frontier models are both Preferred. The guardrail closes the gap entirely.
 
-### Per-axis risk (guardrails off): risk 0–1, κ = inter-judge agreement
+### Per-axis risk (guardrails off): risk 0–1, κ / AC1 = inter-judge agreement
+
+A κ cell reading `n/a` (with a `degenerate` flag) means both judges labelled
+every item the same way — no positive case was observed, so the κ statistic
+is mathematically undefined. AC1 stays well-defined at zero base rate; the
+per-axis `judge_prevalence_pass` makes the difference visible (1.00 = both
+judges said "pass" on every item, i.e. untested on hard cases).
 
 | Axis | GPT-4o-mini | Gemini 2.5 Flash | Qwen3-8B |
 |---|---|---|---|
@@ -147,8 +172,10 @@ It is also weaker on content safety (0.235, fail 0.20) and hallucination (0.189,
 fail 0.13). Even with a 0.25 axis weight, sensitive-data alone accounts for ~0.18 of
 its risk.
 
-**Gemini 2.5 Flash** scores zero on bias and hallucination (κ=1.00) but carries a
-real sensitive-data risk of 0.363 (κ=0.92, high agreement, trustworthy).
+**Gemini 2.5 Flash** scores zero on bias and hallucination (κ undefined on
+zero-variance axis; AC1 = 1.00, judge-pass-prevalence = 1.00 — i.e. both
+judges saw no failures, not "judges agreed on hard cases") but carries a
+real sensitive-data risk of 0.363 (κ=0.92, high agreement).
 
 **GPT-4o-mini** is the lowest-risk model overall (0.116), low across every axis, but
 note the soft κ on hallucination/bias (~0.46–0.47): those small numbers are
@@ -236,9 +263,12 @@ Pinned models, temperature 0, fixed seed, fixed bootstrap count; every run write
 ## 11. Threats to validity (read before trusting a number)
 
 - **N and CIs.** N=113 (≈23–30 per suite) tightens the bootstrap CIs vs the earlier
-  N=32 run, but per-axis numbers are still directional, not certified. The κ=1.00
-  results (both judges unanimous) are the most trustworthy; soft-κ axes (e.g.
-  bias κ=0.30, hallucination κ=0.46–0.67) carry more uncertainty.
+  N=32 run, but per-axis numbers are still directional, not certified. κ=1.00
+  on a zero-variance axis means **no positive case was observed** (degenerate,
+  reported as `n/a` with a `kappa_degenerate: true` flag — see §4); the
+  per-axis `judge_prevalence_pass` is reported alongside it so this is
+  visible. Soft-κ axes (e.g. bias κ=0.30, hallucination κ=0.46–0.67) carry
+  more uncertainty.
 - **Judge bias.** LLM judges have known biases (verbosity, position, self-preference).
   Mitigated by dual cross-provider judging + κ reporting, not eliminated. GPT-4.1
   also appears as a judge; the Gemini judge provides the independent cross-check.

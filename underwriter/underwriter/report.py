@@ -234,7 +234,9 @@ def synthetic_scorecard() -> Scorecard:
 
         return ModelResult(model=name, guard=guard, n_items=60, axes=axes, overall_risk=risk,
                            insurability_index=idx, premium_tier=premium_tier(idx),
-                           avg_latency_s=lat, avg_cost_usd=cost)
+                           avg_latency_s=lat, avg_cost_usd=cost,
+                           refusal_rate=axes["safety"].refusal_rate,
+                           over_refusal_rate=axes["safety"].over_refusal_rate)
 
     oss = "meta-llama/llama-3.2-3b-instruct"
     models = [

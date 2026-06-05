@@ -197,10 +197,14 @@ harness is the product.
 
 **Evaluation framework**. Four risk axes (hallucination, bias & harmful output,
 content safety, sensitive-data disclosure) each scored by a dual-judge pipeline
-(GPT-4.1 + Gemini 2.5 Flash, cross-provider). Hybrid scoring: deterministic
-detectors provide mechanical ground truth; LLM judges add nuance. Cohen's κ
-quantifies inter-judge agreement per axis; a low κ means the number is soft
-and we say so. Bootstrap 95% CIs (1000 resamples) accompany every axis risk.
+(`openai/gpt-4.1` + `anthropic/claude-3.5-haiku`, cross-provider, disjoint from
+the models under test). Hybrid scoring: deterministic detectors provide
+mechanical ground truth; LLM judges add nuance. Cohen's κ quantifies
+inter-judge agreement per axis; a low κ means the number is soft and we say
+so. On a zero-variance axis (no positive case observed) κ is mathematically
+undefined and reported as `n/a` with a `degenerate` flag; **Gwet's AC1** is
+reported alongside κ and is paradox-resistant at the extremes where κ
+collapses. Bootstrap 95% CIs (1000 resamples) accompany every axis risk.
 
 **Guardrail A/B**. Every model runs guardrails-off and guardrails-on. The index
 delta isolates exactly what a safety layer buys: the underwriting question. The
@@ -230,7 +234,7 @@ Gemini 2.5 Flash judges, T=0, seed=7**. Published in the web Evaluation tab and
 | Gemini 2.5 Flash (Frontier) | **86** | 88 | Preferred | 0.144 |
 | Qwen3-8B (OSS, self-hosted) | **68** | 87 | Substandard | 0.316 |
 
-**Per-axis risk (guardrails off)**: risk 0–1, higher = worse; κ = inter-judge agreement.
+**Per-axis risk (guardrails off)**: risk 0–1, higher = worse; κ = inter-judge agreement (`n/a` = degenerate: both judges labelled every item the same way — see [METHODOLOGY §4](underwriter/docs/METHODOLOGY.md) for the prevalence-paradox explanation and AC1 framing).
 
 | Axis | GPT-4o-mini | Gemini 2.5 Flash | Qwen3-8B |
 |---|---|---|---|
@@ -242,8 +246,10 @@ Gemini 2.5 Flash judges, T=0, seed=7**. Published in the web Evaluation tab and
 **Dominant failure mode: sensitive-data disclosure.** Qwen3-8B leaked on **65% of
 the sensitive-data prompts** (risk 0.706), by far the largest single contributor to
 its 0.316 overall risk. It is also weaker on content safety (0.235) and hallucination
-(0.189). The frontier models score zero on bias and hallucination (κ=1.00) and stay
-low elsewhere; even Gemini carries a non-trivial sensitive-data risk (0.363).
+(0.189). The frontier models score zero on bias and hallucination (κ undefined on
+zero-variance axis; AC1=1.00, judge-pass-prevalence=1.00 — i.e. both judges saw no
+failures, not "judges agreed on hard cases") and stay low elsewhere; even Gemini
+carries a non-trivial sensitive-data risk (0.363).
 
 **Guardrail effect: this is the headline.** The guardrail layer transforms the OSS
 model and barely touches the already-safe frontier ones:
@@ -298,7 +304,7 @@ full scoring pipeline. Summary:
 1. Same scaffold for every model (system prompt, memory, generation params, seed)
 2. Deterministic detectors provide hard overrides (leaked PII floors risk at 1.0)
 3. Two cross-provider judges score each item on a 0–4 severity rubric
-4. Cohen's κ flags soft axes; bootstrap CIs bound each estimate
+4. Cohen's κ flags soft axes; AC1 (paradox-resistant) reported alongside; bootstrap CIs bound each estimate
 5. Severity-weighted axis risks combine into an Insurability Index (0–100)
 6. Guardrail A/B isolates the safety layer's contribution
 

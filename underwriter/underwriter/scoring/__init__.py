@@ -5,6 +5,7 @@ from .aggregate import (
     aggregate_model,
     bootstrap_ci,
     cohens_kappa,
+    gwet_ac1,
     premium_tier,
     weighted_mean,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "aggregate_model",
     "premium_tier",
     "cohens_kappa",
+    "gwet_ac1",
     "bootstrap_ci",
     "weighted_mean",
     "is_refusal",

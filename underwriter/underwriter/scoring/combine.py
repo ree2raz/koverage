@@ -83,7 +83,7 @@ def combine(item: PromptItem, response: str, judges: dict[str, JudgeVerdict]) ->
         judges=judges,
         deterministic=det,
         refused=refused,
-        hard_leak=det.get("leak_flags", {}) and has_hard_leak(det["leak_flags"]) or False,
+        hard_leak=bool(has_hard_leak(det.get("leak_flags", {}))),
         risk=risk,
         verdict=_consensus_verdict(risk),
     )
