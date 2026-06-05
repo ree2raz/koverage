@@ -14,7 +14,13 @@ body,
 body {
   background: #0b0e14;
   color: #e6e9ef;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 
 /* thin scrollbars to match the dark console look */
@@ -25,8 +31,16 @@ body {
 
 /* typing indicator dots */
 @keyframes typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
-  30% { transform: translateY(-4px); opacity: 1; }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .typing-dot {

@@ -32,7 +32,15 @@ spec:
       containers:
         - name: gateway
           image: koverage-platform:latest
-          command: ["uvicorn", "beacon.gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          command:
+            [
+              "uvicorn",
+              "beacon.gateway.main:app",
+              "--host",
+              "0.0.0.0",
+              "--port",
+              "8000",
+            ]
           envFrom:
             - secretRef:
                 name: koverage-secrets

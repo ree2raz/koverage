@@ -23,7 +23,9 @@ export default function ChatView() {
   const [showTrace, setShowTrace] = useState(true);
   const [traceKey, setTraceKey] = useState(0);
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("guardrails_enabled") !== "false",
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem("guardrails_enabled") !== "false",
   );
 
   useEffect(() => {
@@ -81,7 +83,9 @@ export default function ChatView() {
 
   function onEvent(msg: SSEMessage) {
     if (msg.event === "meta") {
-      convIdRef.current = (msg.data as { conversation_id: string }).conversation_id;
+      convIdRef.current = (
+        msg.data as { conversation_id: string }
+      ).conversation_id;
     } else if (msg.event === "token") {
       const text = (msg.data as { text: string }).text;
       tokenBufRef.current += text;
@@ -134,12 +138,14 @@ export default function ChatView() {
       setMessages((prev) => {
         const copy = [...prev];
         const last = copy[copy.length - 1];
-        if (last?.streaming) copy[copy.length - 1] = { ...last, streaming: false };
+        if (last?.streaming)
+          copy[copy.length - 1] = { ...last, streaming: false };
         return copy;
       });
       setTraceKey((k) => k + 1);
       refresh();
-      if (wasNew && convIdRef.current) navigate(`/c/${convIdRef.current}`, { replace: true });
+      if (wasNew && convIdRef.current)
+        navigate(`/c/${convIdRef.current}`, { replace: true });
     }
   }
 
@@ -165,7 +171,12 @@ export default function ChatView() {
             {id ? "Conversation" : "New chat"}
           </h1>
           <div className="flex items-center gap-2">
-            <ModelSelector models={models} value={model} onChange={setModel} disabled={streaming} />
+            <ModelSelector
+              models={models}
+              value={model}
+              onChange={setModel}
+              disabled={streaming}
+            />
             <button
               onClick={() => setGuardrailsEnabled((v) => !v)}
               title={
@@ -194,15 +205,17 @@ export default function ChatView() {
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-slate-600 mt-20 text-sm">
-              Ask anything. Each call gets logged: latency, tokens, cost, PII redaction.
-              Open the trace panel to see the breakdown.
+              Ask anything. Each call gets logged: latency, tokens, cost, PII
+              redaction. Open the trace panel to see the breakdown.
             </div>
           )}
           {messages.map((m, i) => (
             <MessageBubble key={m.id ?? i} message={m} />
           ))}
           {error && (
-            <div className="text-rose-400 text-sm bg-rose-500/10 rounded-md px-3 py-2">{error}</div>
+            <div className="text-rose-400 text-sm bg-rose-500/10 rounded-md px-3 py-2">
+              {error}
+            </div>
           )}
           <div ref={bottomRef} />
         </div>
@@ -212,8 +225,10 @@ export default function ChatView() {
           {lastTurn && (
             <div className="mb-2 text-xs text-slate-500 tabular-nums">
               last turn · {lastTurn.completion_tokens} tok ·{" "}
-              {lastTurn.cost_usd === 0 ? "self-hosted" : `$${lastTurn.cost_usd.toFixed(6)}`} ·{" "}
-              {lastTurn.status}
+              {lastTurn.cost_usd === 0
+                ? "self-hosted"
+                : `$${lastTurn.cost_usd.toFixed(6)}`}{" "}
+              · {lastTurn.status}
             </div>
           )}
           <div className="flex items-end gap-2">
@@ -252,9 +267,14 @@ export default function ChatView() {
             Inference trace
           </p>
           {convIdRef.current ? (
-            <TracePanel conversationId={convIdRef.current} refreshKey={traceKey} />
+            <TracePanel
+              conversationId={convIdRef.current}
+              refreshKey={traceKey}
+            />
           ) : (
-            <p className="text-xs text-slate-600 px-1">Send a message to see its trace.</p>
+            <p className="text-xs text-slate-600 px-1">
+              Send a message to see its trace.
+            </p>
           )}
         </div>
       )}

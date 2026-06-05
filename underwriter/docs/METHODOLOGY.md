@@ -1,6 +1,6 @@
 # Underwriter: Evaluation Methodology & Findings
 
-The goal is a *defensible measurement*, not a number. This documents how scores
+The goal is a _defensible measurement_, not a number. This documents how scores
 are produced, why, and what we actually found.
 
 ---
@@ -12,6 +12,7 @@ system prompt, same memory, same generation params (temperature 0, fixed seed),
 same suites, same judges. Any difference in score is the model's, not the harness's.
 
 Models under test:
+
 - **Frontier**: `google/gemini-2.5-flash` and `openai/gpt-4o-mini` (proprietary,
   closed-weights, via OpenRouter: the cheap-tier closed-source models shipped in chat)
 - **OSS (self-hosted)**: `Qwen/Qwen3-8B` (open-weights, deployed on Modal with vLLM
@@ -30,12 +31,12 @@ Models under test:
 
 ## 2. Four risk axes (mapped to underwritten risk)
 
-| Axis | What it measures | Insurance relevance |
-|---|---|---|
-| **Hallucination** | Factual errors, false-premise confabulation | Output liability: claims from wrong advice |
-| **Bias & Harmful Output** | Stereotypes, discriminatory responses | Reputational + regulatory exposure |
-| **Content Safety** | Jailbreak resistance AND over-refusal | Safety failure costs + usability loss |
-| **Sensitive-Data Disclosure** | Leaked PII, confidential markers, planted data | Privacy liability, GDPR/CCPA exposure |
+| Axis                          | What it measures                               | Insurance relevance                        |
+| ----------------------------- | ---------------------------------------------- | ------------------------------------------ |
+| **Hallucination**             | Factual errors, false-premise confabulation    | Output liability: claims from wrong advice |
+| **Bias & Harmful Output**     | Stereotypes, discriminatory responses          | Reputational + regulatory exposure         |
+| **Content Safety**            | Jailbreak resistance AND over-refusal          | Safety failure costs + usability loss      |
+| **Sensitive-Data Disclosure** | Leaked PII, confidential markers, planted data | Privacy liability, GDPR/CCPA exposure      |
 
 > **Content Safety conflates two failure modes.** The composite safety risk
 > averages jailbreak-resistance items (refusal = correct) with over-refusal
@@ -68,6 +69,7 @@ Prompt item
 ```
 
 **Override rules** (deterministic wins where the signal is mechanical):
+
 - A hard PII or sentinel leak floors `sensitive` risk at 1.0 regardless of judge score
 - A refusal caps risk low on harmful items but is penalised on benign controls (over-refusal)
 - A correctly named false premise rescues `hallucination` risk
@@ -140,11 +142,11 @@ Flash judges, T=0.** Published in the web Evaluation tab and
 
 ### Insurability Index
 
-| Model | Guard off | Guard on | Δ | Tier (off) |
-|---|---|---|---|---|
-| GPT-4o-mini (Frontier) | **88** | 87 | −1 | Preferred |
-| Gemini 2.5 Flash (Frontier) | **86** | 88 | +2 | Preferred |
-| Qwen3-8B (OSS, self-hosted) | **68** | 87 | **+19** | Substandard |
+| Model                       | Guard off | Guard on | Δ       | Tier (off)  |
+| --------------------------- | --------- | -------- | ------- | ----------- |
+| GPT-4o-mini (Frontier)      | **88**    | 87       | −1      | Preferred   |
+| Gemini 2.5 Flash (Frontier) | **86**    | 88       | +2      | Preferred   |
+| Qwen3-8B (OSS, self-hosted) | **68**    | 87       | **+19** | Substandard |
 
 The OSS model is the outlier: guard-off it prices as **Substandard**, while the
 frontier models are both Preferred. The guardrail closes the gap entirely.
@@ -157,12 +159,12 @@ is mathematically undefined. AC1 stays well-defined at zero base rate; the
 per-axis `judge_prevalence_pass` makes the difference visible (1.00 = both
 judges said "pass" on every item, i.e. untested on hard cases).
 
-| Axis | GPT-4o-mini | Gemini 2.5 Flash | Qwen3-8B |
-|---|---|---|---|
-| Hallucination | 0.086 (κ=0.46) | 0.000 (κ=1.00) | 0.189 (κ=0.67) |
-| Bias | 0.042 (κ=0.47) | 0.000 (κ=1.00) | 0.065 (κ=0.30) |
-| Content Safety | 0.142 (κ=0.72) | 0.152 (κ=0.71) | 0.235 (κ=0.66) |
-| Sensitive-Data | 0.152 (κ=0.62) | 0.363 (κ=0.92) | **0.706 (κ=0.61)** |
+| Axis           | GPT-4o-mini    | Gemini 2.5 Flash | Qwen3-8B           |
+| -------------- | -------------- | ---------------- | ------------------ |
+| Hallucination  | 0.086 (κ=0.46) | 0.000 (κ=1.00)   | 0.189 (κ=0.67)     |
+| Bias           | 0.042 (κ=0.47) | 0.000 (κ=1.00)   | 0.065 (κ=0.30)     |
+| Content Safety | 0.142 (κ=0.72) | 0.152 (κ=0.71)   | 0.235 (κ=0.66)     |
+| Sensitive-Data | 0.152 (κ=0.62) | 0.363 (κ=0.92)   | **0.706 (κ=0.61)** |
 
 ### Sensitive-data disclosure is the dominant OSS risk
 
@@ -186,25 +188,25 @@ uncertain, not certified zeros.
 The guardrail targets exactly the OSS weakness (sensitive-data) and largely
 eliminates it:
 
-| Model | Overall: off → on | Sensitive: off → on | Index Δ |
-|---|---|---|---|
-| GPT-4o-mini | 0.116 → 0.129 | 0.152 → 0.147 | −1 |
-| Gemini 2.5 Flash | 0.144 → 0.119 | 0.363 → 0.262 | +2 |
-| Qwen3-8B | 0.316 → 0.132 | **0.706 → 0.081** | **+19** |
+| Model            | Overall: off → on | Sensitive: off → on | Index Δ |
+| ---------------- | ----------------- | ------------------- | ------- |
+| GPT-4o-mini      | 0.116 → 0.129     | 0.152 → 0.147       | −1      |
+| Gemini 2.5 Flash | 0.144 → 0.119     | 0.363 → 0.262       | +2      |
+| Qwen3-8B         | 0.316 → 0.132     | **0.706 → 0.081**   | **+19** |
 
-On GPT-4o-mini the guardrail slightly *raises* overall risk (−1 index): its
+On GPT-4o-mini the guardrail slightly _raises_ overall risk (−1 index): its
 benign-prompt caution adds a small over-refusal cost. That is a genuine tradeoff, and
 the A/B is exactly what surfaces it rather than hiding it.
 
 ### Cost and latency (guardrails off)
 
-| Model | Cost/req | Avg latency |
-|---|---|---|
-| GPT-4o-mini | OpenRouter, ~$0.0001 | 3.75s |
-| Gemini 2.5 Flash | $0.00101 | 3.32s |
-| Qwen3-8B (OSS, Modal A10G) | GPU-time (~$1.10/hr, scale-to-zero) | 27.3s* |
+| Model                      | Cost/req                            | Avg latency |
+| -------------------------- | ----------------------------------- | ----------- |
+| GPT-4o-mini                | OpenRouter, ~$0.0001                | 3.75s       |
+| Gemini 2.5 Flash           | $0.00101                            | 3.32s       |
+| Qwen3-8B (OSS, Modal A10G) | GPU-time (~$1.10/hr, scale-to-zero) | 27.3s\*     |
 
-<sub>*Qwen3-8B latency is the **full per-item** wall time over multi-turn eval prompts
+<sub>\*Qwen3-8B latency is the **full per-item** wall time over multi-turn eval prompts
 on one A10G with vLLM (cold-start amortised, no batching tuning), not a single warm
 call. Warm single-turn chat latency is ~0.8–2 s. Risk scores are
 deployment-independent (same weights, T=0); only latency is hardware-bound.</sub>
@@ -253,6 +255,7 @@ KV-cache rationale, and the cost/latency profile.
 ## 10. Reproducibility
 
 Pinned models, temperature 0, fixed seed, fixed bootstrap count; every run writes:
+
 - `manifest.json`: git SHA, models, judges, all params
 - `scores.jsonl`: raw per-item scores + judge rationales
 - `scorecard.json`: aggregated results
@@ -287,7 +290,7 @@ Pinned models, temperature 0, fixed seed, fixed bootstrap count; every run write
 
 ## 12. What I'd improve with more time
 
-- **Larger N**: 50+ items *per suite* would tighten CIs further, turning
+- **Larger N**: 50+ items _per suite_ would tighten CIs further, turning
   directional signals into certifiable findings.
 - **Temperature sweep**: characterise worst-case sampling behaviour (T=0, 0.3,
   0.7) which matters more than modal behaviour for insurance risk pricing.

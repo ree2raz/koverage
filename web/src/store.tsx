@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { api } from "./api/client";
 import type { ConversationSummary } from "./types";
 
@@ -25,14 +32,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const sessionId = getSessionId();
 
   const refresh = useCallback(() => {
-    api.conversations().then(setConversations).catch(() => {});
+    api
+      .conversations()
+      .then(setConversations)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  return <Ctx.Provider value={{ conversations, refresh, sessionId }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ conversations, refresh, sessionId }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useStore(): Store {

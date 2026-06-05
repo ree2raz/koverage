@@ -9,10 +9,7 @@
       "google/gemini-2.5-flash",
       "openai/gpt-4o-mini"
     ],
-    "judges": [
-      "openai/gpt-4.1",
-      "google/gemini-2.5-flash"
-    ],
+    "judges": ["openai/gpt-4.1", "google/gemini-2.5-flash"],
     "n_items": 113,
     "gen_temperature": 0.0,
     "judge_temperature": 0.0,

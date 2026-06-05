@@ -44,23 +44,23 @@ flowchart LR
     end
 ```
 
-*Two independent flows. They don't pass requests to each other. They just share
-the same underlying code (model routing + cost math).*
+_Two independent flows. They don't pass requests to each other. They just share
+the same underlying code (model routing + cost math)._
 
-**Why two halves?** Beacon watches AI *while it runs*; Underwriter judges a model
-*before you trust it*. Between them they cover picking a safe model and keeping it
+**Why two halves?** Beacon watches AI _while it runs_; Underwriter judges a model
+_before you trust it_. Between them they cover picking a safe model and keeping it
 honest in production. They share one codebase: the chatbot, the model plumbing,
 and the cost math are written once and used by both.
 
 ### What's in the box
 
-| Part | In plain words | Why it exists |
-|---|---|---|
-| **Chatbot + web app** | The app you actually talk to (`web/`) | Gives us something real to observe and evaluate, not a toy demo |
-| **Beacon** | A flight recorder for every AI call (`llmobs/`, `beacon/`) | See speed, cost, and errors live; never lose a conversation; keep private data out of the logs |
-| **Underwriter** | A safety inspector that scores models (`underwriter/`) | Know how risky a model is *before* trusting it with real users |
-| **Shared core** | The common plumbing both halves reuse (`core/`) | Model routing and cost math written once, so nothing is built twice |
- | **Deploy** | One-command startup + cloud configs (`deploy/`) | Anyone can run the whole thing with a single command |
+| Part                  | In plain words                                             | Why it exists                                                                                  |
+| --------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Chatbot + web app** | The app you actually talk to (`web/`)                      | Gives us something real to observe and evaluate, not a toy demo                                |
+| **Beacon**            | A flight recorder for every AI call (`llmobs/`, `beacon/`) | See speed, cost, and errors live; never lose a conversation; keep private data out of the logs |
+| **Underwriter**       | A safety inspector that scores models (`underwriter/`)     | Know how risky a model is _before_ trusting it with real users                                 |
+| **Shared core**       | The common plumbing both halves reuse (`core/`)            | Model routing and cost math written once, so nothing is built twice                            |
+| **Deploy**            | One-command startup + cloud configs (`deploy/`)            | Anyone can run the whole thing with a single command                                           |
 
 ---
 
@@ -145,13 +145,13 @@ loss is observable, not silent.
 
 ### Schema design tradeoffs
 
-| Decision | Tradeoff |
-|---|---|
+| Decision                                          | Tradeoff                                                                                                         |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Two write paths (sync chat + async observability) | Correctness for chat state; best-effort for logs. Clear contract: observability loss never corrupts conversation |
-| `request_id` UNIQUE as idempotency key | Safe redelivery from Kafka; slight write overhead on every insert |
-| Previews not raw content in inference_logs | Privacy-by-design; full content only in `messages` (the chat record) |
-| JSONB for `meta` and `redaction_counts` | Absorbs provider-specific fields without schema migrations |
-| Postgres for both OLTP and analytics | Simple at current volume; documented scale-out path to ClickHouse via the same Kafka topic |
+| `request_id` UNIQUE as idempotency key            | Safe redelivery from Kafka; slight write overhead on every insert                                                |
+| Previews not raw content in inference_logs        | Privacy-by-design; full content only in `messages` (the chat record)                                             |
+| JSONB for `meta` and `redaction_counts`           | Absorbs provider-specific fields without schema migrations                                                       |
+| Postgres for both OLTP and analytics              | Simple at current volume; documented scale-out path to ClickHouse via the same Kafka topic                       |
 
 ### Quickstart
 
@@ -186,6 +186,7 @@ insurance premium tier. The two assistants are the subjects under test; the
 harness is the product.
 
 **Assistants under test:**
+
 - **Frontier**: `google/gemini-2.5-flash` and `openai/gpt-4o-mini` via OpenRouter
   (cheap-tier closed-source models, the ones actually shipped in the chat UI).
 - **OSS**: `Qwen/Qwen3-8B`, self-hosted on Modal (vLLM behind a Modal endpoint
@@ -208,7 +209,7 @@ collapses. Bootstrap 95% CIs (1000 resamples) accompany every axis risk.
 
 **Guardrail A/B**. Every model runs guardrails-off and guardrails-on. The index
 delta isolates exactly what a safety layer buys: the underwriting question. The
-*same* `DefaultGuardrail` from `llmcore.guardrails` is also wired into the chat
+_same_ `DefaultGuardrail` from `llmcore.guardrails` is also wired into the chat
 gateway with a UI toggle in the composer; jailbreak attempts there are refused
 before any model call and surface in the Observability dashboard as
 `status=refused` spans.
@@ -228,20 +229,20 @@ JSON to the web Evaluation tab.
 Gemini 2.5 Flash judges, T=0, seed=7**. Published in the web Evaluation tab and
 `web/public/eval-scorecard.json`.
 
-| Model | Index (off) | Index (on) | Tier (off) | Overall risk (off) |
-|---|---|---|---|---|
-| GPT-4o-mini (Frontier) | **88** | 87 | Preferred | 0.116 |
-| Gemini 2.5 Flash (Frontier) | **86** | 88 | Preferred | 0.144 |
-| Qwen3-8B (OSS, self-hosted) | **68** | 87 | Substandard | 0.316 |
+| Model                       | Index (off) | Index (on) | Tier (off)  | Overall risk (off) |
+| --------------------------- | ----------- | ---------- | ----------- | ------------------ |
+| GPT-4o-mini (Frontier)      | **88**      | 87         | Preferred   | 0.116              |
+| Gemini 2.5 Flash (Frontier) | **86**      | 88         | Preferred   | 0.144              |
+| Qwen3-8B (OSS, self-hosted) | **68**      | 87         | Substandard | 0.316              |
 
 **Per-axis risk (guardrails off)**: risk 0–1, higher = worse; κ = inter-judge agreement (`n/a` = degenerate: both judges labelled every item the same way — see [METHODOLOGY §4](underwriter/docs/METHODOLOGY.md) for the prevalence-paradox explanation and AC1 framing).
 
-| Axis | GPT-4o-mini | Gemini 2.5 Flash | Qwen3-8B |
-|---|---|---|---|
-| Hallucination | 0.086 (κ=0.46) | 0.000 (κ=1.00) | 0.189 (κ=0.67) |
-| Bias | 0.042 (κ=0.47) | 0.000 (κ=1.00) | 0.065 (κ=0.30) |
-| Content Safety | 0.142 (κ=0.72) | 0.152 (κ=0.71) | 0.235 (κ=0.66) |
-| Sensitive-Data | 0.152 (κ=0.62) | 0.363 (κ=0.92) | **0.706 (κ=0.61)** |
+| Axis           | GPT-4o-mini    | Gemini 2.5 Flash | Qwen3-8B           |
+| -------------- | -------------- | ---------------- | ------------------ |
+| Hallucination  | 0.086 (κ=0.46) | 0.000 (κ=1.00)   | 0.189 (κ=0.67)     |
+| Bias           | 0.042 (κ=0.47) | 0.000 (κ=1.00)   | 0.065 (κ=0.30)     |
+| Content Safety | 0.142 (κ=0.72) | 0.152 (κ=0.71)   | 0.235 (κ=0.66)     |
+| Sensitive-Data | 0.152 (κ=0.62) | 0.363 (κ=0.92)   | **0.706 (κ=0.61)** |
 
 **Dominant failure mode: sensitive-data disclosure.** Qwen3-8B leaked on **65% of
 the sensitive-data prompts** (risk 0.706), by far the largest single contributor to
@@ -254,20 +255,21 @@ carries a non-trivial sensitive-data risk (0.363).
 **Guardrail effect: this is the headline.** The guardrail layer transforms the OSS
 model and barely touches the already-safe frontier ones:
 
-| Model | Overall risk (off → on) | Sensitive (off → on) | Index Δ |
-|---|---|---|---|
-| GPT-4o-mini | 0.116 → 0.129 | 0.152 → 0.147 | −1 |
-| Gemini 2.5 Flash | 0.144 → 0.119 | 0.363 → 0.262 | +2 |
-| Qwen3-8B | 0.316 → 0.132 | **0.706 → 0.081** | **+19** |
+| Model            | Overall risk (off → on) | Sensitive (off → on) | Index Δ |
+| ---------------- | ----------------------- | -------------------- | ------- |
+| GPT-4o-mini      | 0.116 → 0.129           | 0.152 → 0.147        | −1      |
+| Gemini 2.5 Flash | 0.144 → 0.119           | 0.363 → 0.262        | +2      |
+| Qwen3-8B         | 0.316 → 0.132           | **0.706 → 0.081**    | **+19** |
 
 Qwen3-8B's sensitive-data risk collapses from 0.706 to 0.081, dropping overall risk
 from 0.316 → 0.132 and lifting the index **68 → 87 (+19) from Substandard to Preferred**,
 level with the frontier models. The frontier models barely move (Gemini +2,
 GPT-4o-mini −1); on GPT-4o-mini the guardrail's benign-prompt caution slightly
-*raises* measured risk (a small over-refusal cost), a real tradeoff the A/B exists
+_raises_ measured risk (a small over-refusal cost), a real tradeoff the A/B exists
 to surface.
 
 **The underwriting answer:**
+
 > An 8B OSS model is **not** insurable at Preferred tier on its own. At index 68 it
 > prices as Substandard, driven mostly by sensitive-data disclosure (it leaked on 65%
 > of those prompts). But a single guardrail layer closes almost the entire gap: +19
@@ -277,13 +279,13 @@ to surface.
 
 **Cost and latency (guard off):**
 
-| Model | Cost/req | Avg latency |
-|---|---|---|
-| GPT-4o-mini | OpenRouter, ~$0.0001 | 3.75s |
-| Gemini 2.5 Flash | $0.00101 | 3.32s |
-| Qwen3-8B (OSS, Modal A10G) | GPU-time (~$1.10/hr, scale-to-zero) | 27.3s* |
+| Model                      | Cost/req                            | Avg latency |
+| -------------------------- | ----------------------------------- | ----------- |
+| GPT-4o-mini                | OpenRouter, ~$0.0001                | 3.75s       |
+| Gemini 2.5 Flash           | $0.00101                            | 3.32s       |
+| Qwen3-8B (OSS, Modal A10G) | GPU-time (~$1.10/hr, scale-to-zero) | 27.3s\*     |
 
-<sub>*Qwen3-8B latency here is the **full per-item** wall time over multi-turn eval
+<sub>\*Qwen3-8B latency here is the **full per-item** wall time over multi-turn eval
 prompts on a single A10G with vLLM (cold-start amortised, no batching tuning), not a
 single-shot warm call. Warm single-turn chat latency is far lower (~0.8–2 s). The
 risk scores are deployment-independent (same weights, T=0); only latency is
@@ -310,8 +312,8 @@ full scoring pipeline. Summary:
 
 ### What I'd improve with more time
 
-- **Tighter CIs / larger N**: N=113 gives directional findings; 50+ items *per
-  suite* would tighten the bootstrap CIs enough to turn them into certifiable claims.
+- **Tighter CIs / larger N**: N=113 gives directional findings; 50+ items _per
+  suite_ would tighten the bootstrap CIs enough to turn them into certifiable claims.
 - **Temperature sweep**: T=0 measures modal behaviour. A sweep over T=0, 0.3,
   0.7 would characterise worst-case sampling, which matters more for insurance
   than best-case.

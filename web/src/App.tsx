@@ -17,7 +17,9 @@ function TopBar() {
     <header className="flex items-center gap-5 px-4 h-11 border-b border-slate-800 bg-slate-900 shrink-0">
       <div className="flex items-center gap-2">
         <span className="text-sm">🛰️</span>
-        <span className="font-semibold text-sm tracking-tight text-white">Beacon</span>
+        <span className="font-semibold text-sm tracking-tight text-white">
+          Beacon
+        </span>
       </div>
       <nav className="flex gap-0.5">
         {NAV.map(({ to, label, end }) => (
@@ -43,7 +45,8 @@ function TopBar() {
 
 export default function App() {
   const location = useLocation();
-  const isChat = location.pathname === "/" || location.pathname.startsWith("/c/");
+  const isChat =
+    location.pathname === "/" || location.pathname.startsWith("/c/");
 
   return (
     <StoreProvider>

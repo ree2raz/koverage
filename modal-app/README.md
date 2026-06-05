@@ -40,15 +40,15 @@ evaluation harness and the chat UI's OSS path.
 
 ## Cost & latency (A10G)
 
-| Metric | Value |
-|---|---|
-| GPU | A10G (24 GB) |
-| Price | ~$1.10/hr (Modal, per-second billing) |
-| Cold start | ~1–3 min first call (weights from Volume + vLLM warmup) |
-| Warm latency (single-turn chat) | ~0.8–2 s per request |
-| Per-item eval latency | ~27 s (full multi-turn prompt on one A10G, cold-start amortised) |
-| Throughput | vLLM continuous batching; up to ~50 concurrent inputs |
-| Idle cost | $0 (scales to zero after 5 min idle) |
+| Metric                          | Value                                                            |
+| ------------------------------- | ---------------------------------------------------------------- |
+| GPU                             | A10G (24 GB)                                                     |
+| Price                           | ~$1.10/hr (Modal, per-second billing)                            |
+| Cold start                      | ~1–3 min first call (weights from Volume + vLLM warmup)          |
+| Warm latency (single-turn chat) | ~0.8–2 s per request                                             |
+| Per-item eval latency           | ~27 s (full multi-turn prompt on one A10G, cold-start amortised) |
+| Throughput                      | vLLM continuous batching; up to ~50 concurrent inputs            |
+| Idle cost                       | $0 (scales to zero after 5 min idle)                             |
 
 ## Deploy
 
