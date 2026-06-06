@@ -3,6 +3,10 @@
 The goal is a _defensible measurement_, not a number. This documents how scores
 are produced, why, and what we actually found.
 
+> New to the statistics here (κ, AC1, risk axes, refusal rates)? Read
+> [**METRICS_EXPLAINED.md**](./METRICS_EXPLAINED.md) first — a plain-English,
+> no-stats-background walkthrough of every metric this eval reports.
+
 ---
 
 ## 1. Fair comparison by construction
