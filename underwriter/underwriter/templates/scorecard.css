@@ -3,7 +3,9 @@
   margin: 0.45in 0.5in 0.5in 0.5in;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   font-family: -apple-system, "Helvetica Neue", "Segoe UI", Inter, sans-serif;
@@ -33,13 +35,13 @@ body {
 }
 .header .subtitle {
   font-size: 9pt;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
 }
 .header .meta-right {
   text-align: right;
   font-size: 8pt;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.5;
 }
 .header .badge-warn {
@@ -56,14 +58,17 @@ body {
 .header .meta-strip {
   margin-top: 8pt;
   padding-top: 6pt;
-  border-top: 0.5pt solid rgba(255,255,255,0.25);
+  border-top: 0.5pt solid rgba(255, 255, 255, 0.25);
   font-size: 7.8pt;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   display: flex;
   flex-wrap: wrap;
   gap: 12pt;
 }
-.header .meta-strip strong { color: #fff; font-weight: 600; }
+.header .meta-strip strong {
+  color: #fff;
+  font-weight: 600;
+}
 
 /* ── verdict banner ──────────────────────────────────────────── */
 .verdict {
@@ -148,9 +153,18 @@ body {
   letter-spacing: 0.04em;
   margin-bottom: 2pt;
 }
-.badge.pass    { background: #dcfce7; color: #15803d; }
-.badge.partial { background: #fef9c3; color: #a16207; }
-.badge.fail    { background: #fee2e2; color: #b91c1c; }
+.badge.pass {
+  background: #dcfce7;
+  color: #15803d;
+}
+.badge.partial {
+  background: #fef9c3;
+  color: #a16207;
+}
+.badge.fail {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 
 .count-text {
   font-size: 7.5pt;
@@ -195,7 +209,10 @@ body {
   background: #fafafa;
   border-top: 0.5pt solid #f1f5f9;
 }
-.meta-row td:first-child { color: #94a3b8; font-style: italic; }
+.meta-row td:first-child {
+  color: #94a3b8;
+  font-style: italic;
+}
 
 /* ── guardrail section ───────────────────────────────────────── */
 .guardrail-section {
@@ -215,17 +232,29 @@ body {
   font-size: 8pt;
   color: #475569;
 }
-.guardrail-table th.center { text-align: center; }
+.guardrail-table th.center {
+  text-align: center;
+}
 .guardrail-table td {
   padding: 5pt 8pt;
   border: 0.5pt solid #e2e8f0;
   vertical-align: middle;
   text-align: center;
 }
-.guardrail-table td:first-child { text-align: left; }
-.guardrail-table tr:nth-child(even) td { background: #fafafa; }
-.improved { color: #16a34a; font-weight: 600; }
-.arrow { color: #94a3b8; font-size: 8pt; }
+.guardrail-table td:first-child {
+  text-align: left;
+}
+.guardrail-table tr:nth-child(even) td {
+  background: #fafafa;
+}
+.improved {
+  color: #16a34a;
+  font-weight: 600;
+}
+.arrow {
+  color: #94a3b8;
+  font-size: 8pt;
+}
 
 /* ── recommendation ─────────────────────────────────────────── */
 .callout {

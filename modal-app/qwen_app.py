@@ -56,6 +56,7 @@ _VLLM_CMD = [
     timeout=10 * MINUTES,
     volumes={"/root/.cache/huggingface": hf_cache},
     min_containers=1,  # FIXED: Replaces the deprecated keep_warm=1
+    max_containers=5,  # Cap fan-out — keeps the eval under the account's infra rate limits
 )
 class VLLMServer:
     @modal.enter()

@@ -82,7 +82,9 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
                   className="text-xs text-slate-400 hover:text-slate-200 inline-flex items-center gap-1"
                 >
                   <span>{showReasoning ? "▾" : "▸"}</span>
-                  <span>{thinking && !answer ? "Reasoning…" : "Reasoning"}</span>
+                  <span>
+                    {thinking && !answer ? "Reasoning…" : "Reasoning"}
+                  </span>
                 </button>
                 {showReasoning && (
                   <div className="mt-1 border-l-2 border-slate-600 pl-2 text-xs text-slate-400 whitespace-pre-wrap">

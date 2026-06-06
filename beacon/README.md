@@ -8,13 +8,14 @@ Architecture notes (ingestion flow, logging strategy, scaling, failure handling,
 schema decisions): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Components
-| Path | What |
-| --- | --- |
-| `llmobs/` | The SDK: `trace()` span → capture + **redact PII before egress** → bounded async queue → batched POST. Non-blocking, retry, circuit breaker, drop-with-counter. |
-| `beacon/gateway/` | FastAPI chat: SSE streaming, multi-provider, conversation persistence, cancel; read API for dashboards. |
-| `beacon/ingestion/` | FastAPI: validate + `x-api-key`, produce to Redpanda, return `202`; bad events → DLQ. |
-| `beacon/worker/` | Redpanda consumer → idempotent upsert into Postgres; poison → DLQ. |
-| `beacon/db/` | SQLAlchemy models + Alembic migrations. |
+
+| Path                | What                                                                                                                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `llmobs/`           | The SDK: `trace()` span → capture + **redact PII before egress** → bounded async queue → batched POST. Non-blocking, retry, circuit breaker, drop-with-counter. |
+| `beacon/gateway/`   | FastAPI chat: SSE streaming, multi-provider, conversation persistence, cancel; read API for dashboards.                                                         |
+| `beacon/ingestion/` | FastAPI: validate + `x-api-key`, produce to Redpanda, return `202`; bad events → DLQ.                                                                           |
+| `beacon/worker/`    | Redpanda consumer → idempotent upsert into Postgres; poison → DLQ.                                                                                              |
+| `beacon/db/`        | SQLAlchemy models + Alembic migrations.                                                                                                                         |
 
 ## Run it locally
 
@@ -38,6 +39,7 @@ uv run uvicorn beacon.gateway.main:app --port 8000
 ```
 
 ### Smoke test: watch a redacted log land end-to-end
+
 ```bash
 # stream a chat turn (SSE)
 curl -N -X POST localhost:8000/chat -H 'content-type: application/json' \
@@ -51,13 +53,16 @@ curl -s localhost:8000/api/metrics/summary | jq
 ```
 
 ## Offline tests (no infra, no keys)
+
 ```bash
 uv run pytest beacon/tests
 ```
+
 Covers the redaction golden set, the SDK's non-blocking / retry / circuit-breaker /
 bounded-drop behaviour, and the tracer's event construction.
 
 ## Endpoints
+
 - `POST /chat` - SSE token stream (`meta` → `token`… → `done`).
 - `POST /conversations/{id}/cancel` - stop an in-flight stream.
 - `GET /models` - model catalog for the selector.

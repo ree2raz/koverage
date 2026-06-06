@@ -26,9 +26,16 @@ class UnderwriterSettings(BaseSettings):
     oss_fallback_model: str = "qwen/qwen3-8b"
 
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)
-    # the models under test, so no assistant grades itself or its sibling.
+    # the models under test, so no assistant grades itself or its sibling. The
+    # pair is rotated if either judge model is added to models_under_test.
     judge_a: str = "openai/gpt-4.1"
-    judge_b: str = "google/gemini-2.5-flash"
+    judge_b: str = "anthropic/claude-3.5-haiku"
+
+    # Semantic backend for the input guardrail's LLM check. Kept identical to the
+    # Beacon chat gateway's default (`beacon.settings.guardrail_model`) so the
+    # eval's guard-on pass measures the guardrail that actually ships, not a
+    # regex-only stub. A cheap, fast model — it sees every guarded prompt.
+    guardrail_model: str = "openai/gpt-4.1-nano"
 
     # Determinism: low temperature everywhere, fixed seed, pinned bootstrap count.
     gen_temperature: float = 0.0

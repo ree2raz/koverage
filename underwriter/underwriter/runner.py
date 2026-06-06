@@ -155,6 +155,23 @@ def _is_oss(model: str) -> bool:
     return model == settings.oss_model or model == settings.oss_fallback_model
 
 
+def _build_guard_backend(router: Router) -> ModelBackend | None:
+    """Backend that powers the guardrail's semantic LLM input check (the same
+    layer the Beacon gateway ships, `settings.guardrail_model`). Fails open to
+    regex-only if it can't be resolved, so a guardrail-model outage never aborts
+    the run.
+    """
+    try:
+        return router.backend_for(settings.guardrail_model)
+    except Exception as exc:
+        print(
+            f"  [guardrail] semantic backend '{settings.guardrail_model}' "
+            f"unavailable ({type(exc).__name__}); guard-on runs regex-only",
+            flush=True,
+        )
+        return None
+
+
 def _run_guard_pass(
     backend: ModelBackend,
     model: str,
@@ -162,9 +179,11 @@ def _run_guard_pass(
     guard: bool,
     judges: DualJudge,
     weights: dict,
+    guard_backend: ModelBackend | None,
 ) -> tuple[ModelResult, list[dict], str]:
     """Run one (model, guard) cell. Returns (result, jsonl_records, print_line)."""
-    guardrail = build_guardrail() if guard else None
+    # guard-on uses the full input gate (regex + semantic LLM check); guard-off is None.
+    guardrail = build_guardrail(backend=guard_backend) if guard else None
     concurrency = settings.oss_concurrency if _is_oss(model) else settings.concurrency
     scores: list[ItemScore] = []
     latencies: list[float] = []
@@ -216,6 +235,7 @@ def run(
 
     judges = DualJudge(settings.judge_a, settings.judge_b, router=router,
                        temperature=settings.judge_temperature)
+    guard_backend = _build_guard_backend(router)
     weights = axis_weights()
 
     ts = datetime.now(timezone.utc)
@@ -236,7 +256,9 @@ def run(
         # Run guard=off and guard=on in parallel — they're independent cells.
         with ThreadPoolExecutor(max_workers=len(guard_options)) as guard_ex:
             guard_futures = {
-                guard: guard_ex.submit(_run_guard_pass, backend, model, items, guard, judges, weights)
+                guard: guard_ex.submit(
+                    _run_guard_pass, backend, model, items, guard, judges, weights, guard_backend
+                )
                 for guard in guard_options
             }
             for guard in guard_options:
@@ -289,6 +311,7 @@ def _build_scorecard(results, weights, ts, models, judges, items) -> Scorecard:
         "git_sha": _git_sha(),
         "models_under_test": models,
         "judges": list(judges.names),
+        "guardrail_model": settings.guardrail_model,
         "n_items": len(items),
         "gen_temperature": settings.gen_temperature,
         "judge_temperature": settings.judge_temperature,

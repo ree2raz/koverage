@@ -5,8 +5,16 @@ import { useStore } from "../store";
 
 function statusDot(status: string) {
   const color =
-    status === "cancelled" ? "bg-amber-400" : status === "archived" ? "bg-slate-500" : "bg-emerald-400";
-  return <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${color}`} />;
+    status === "cancelled"
+      ? "bg-amber-400"
+      : status === "archived"
+        ? "bg-slate-500"
+        : "bg-emerald-400";
+  return (
+    <span
+      className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${color}`}
+    />
+  );
 }
 
 export default function Sidebar() {
@@ -56,9 +64,13 @@ export default function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        <p className="px-2 py-1 text-xs uppercase tracking-wide text-slate-500">History</p>
+        <p className="px-2 py-1 text-xs uppercase tracking-wide text-slate-500">
+          History
+        </p>
         {conversations.length === 0 && (
-          <p className="px-2 py-2 text-xs text-slate-500">No conversations yet.</p>
+          <p className="px-2 py-2 text-xs text-slate-500">
+            No conversations yet.
+          </p>
         )}
         {conversations.map((c) => {
           const isActive = activeId === c.id;
@@ -98,15 +110,30 @@ export default function Sidebar() {
               )}
 
               {!isEditing && (
-                <div className={`flex gap-0.5 shrink-0 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                <div
+                  className={`flex gap-0.5 shrink-0 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                >
                   <button
-                    onClick={(e) => { e.stopPropagation(); startRename(c.id, c.title); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startRename(c.id, c.title);
+                    }}
                     title="Rename"
                     className="rounded p-1 hover:bg-slate-700 text-slate-400 hover:text-slate-200"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                   </button>
                   <button
@@ -114,11 +141,21 @@ export default function Sidebar() {
                     title="Delete"
                     className="rounded p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      <path d="M10 11v6M14 11v6"/>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
                   </button>
                 </div>
