@@ -1,14 +1,19 @@
 from .aggregate import (
+    TIER_ORDER,
     AxisResult,
     ModelResult,
     aggregate_axis,
     aggregate_model,
+    axis_ceiling_tier,
     bootstrap_ci,
+    bootstrap_index,
     cohens_kappa,
     gwet_ac1,
     premium_tier,
+    price,
     weighted_cohens_kappa,
     weighted_mean,
+    worst_tier,
 )
 from .combine import ItemScore, combine
 from .deterministic import (
@@ -17,10 +22,12 @@ from .deterministic import (
     has_hard_leak,
     is_partial_compliance,
     is_refusal,
+    tail_risk,
 )
 from .judge import DualJudge, Judge, JudgeVerdict
 
 __all__ = [
+    "TIER_ORDER",
     "ItemScore",
     "combine",
     "DualJudge",
@@ -30,7 +37,11 @@ __all__ = [
     "ModelResult",
     "aggregate_axis",
     "aggregate_model",
+    "axis_ceiling_tier",
+    "bootstrap_index",
     "premium_tier",
+    "price",
+    "worst_tier",
     "cohens_kappa",
     "gwet_ac1",
     "weighted_cohens_kappa",
@@ -41,4 +52,5 @@ __all__ = [
     "acknowledges_false_premise",
     "detect_leak",
     "has_hard_leak",
+    "tail_risk",
 ]
