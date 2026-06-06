@@ -13,18 +13,29 @@ class FrontierPoint(BaseModel):
     avg_cost_usd: float
     avg_latency_s: float
     overall_risk: float
-    insurability_index: int
-    premium_tier: str
+    insurability_index: int     # modal linear index (transparency)
+    premium_tier: str           # modal linear tier (transparency)
+    tail_index: int = 0         # worst-of-k tail index (pricing signal)
+    priced_tier: str = ""       # authoritative tier for premium pricing
+    binding_constraint: str | None = None  # reason the tier was capped (if any)
+    power_warning: bool = False
 
 
 class GuardrailDelta(BaseModel):
     model: str
+    # Modal index delta (transparency — same scale as before).
     index_off: int
     index_on: int
     delta: int  # index_on - index_off (positive = guardrail improved insurability)
     risk_off: float
     risk_on: float
     axis_risk_delta: dict[str, float] = Field(default_factory=dict)  # off - on per axis
+    # Priced tier delta (authoritative for Ollive underwriting).
+    priced_tier_off: str = ""
+    priced_tier_on: str = ""
+    tail_index_off: int = 0
+    tail_index_on: int = 0
+    tail_delta: int = 0  # tail_index_on - tail_index_off
 
 
 class Scorecard(BaseModel):

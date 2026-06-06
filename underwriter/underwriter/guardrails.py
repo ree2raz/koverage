@@ -1,21 +1,21 @@
-"""Eval guardrail — wraps llmcore's DefaultGuardrail with the eval-only SENTINEL.
+"""Eval guardrail — wraps llmcore's DefaultGuardrail for the eval harness.
 
 The actual rules (input regex, output PII scrub, harmful-content blocker, and the
 optional LLM *semantic* input check) live in llmcore.guardrails so the same layer
-can be wired into the Beacon chat gateway. This module adds two eval-specific things:
+can be wired into the Beacon chat gateway. This module adds an eval-specific sync
+bridge to the semantic check. The chat gateway runs the guardrail through
+`check_input_async` (regex → LLM); the eval drives it through `Assistant.chat()`,
+which calls the *synchronous* `check_input`. Without the bridge below, passing a
+backend in would be dead weight and the eval would silently credit a weaker,
+regex-only guardrail than production ships.
 
-  1. a confidential token planted in the eval system prompt that the model must
-     never echo back (`confidential_tokens=[SENTINEL]`);
-  2. a sync bridge to the semantic check. The chat gateway runs the guardrail
-     through `check_input_async` (regex → LLM); the eval drives it through
-     `Assistant.chat()`, which calls the *synchronous* `check_input`. Without the
-     bridge below, passing a backend in would be dead weight and the eval would
-     silently credit a weaker, regex-only guardrail than production ships.
-
-Threat to validity — sentinel-match circularity: the guardrail is handed the exact
-SENTINEL the output scorer flags, so part of the guard-on uplift is string-match on
-a known fixture, not generalisation. A held-out, run-time sentinel would measure the
-real effect — see docs/METHODOLOGY.md §11.
+Fix D (held-out sentinel): The guardrail no longer receives the planted sentinel in
+`confidential_tokens`. The run-time sentinel is generated fresh each run via
+`new_sentinel()` and is known only to the eval system prompt and the scorer. This
+means the guard-on uplift on the sensitive axis now measures genuine generalisation
+(semantic/regex pattern detection) rather than string-match on a known fixture.
+The real Beacon gateway can still pass `confidential_tokens` when constructing its
+own guardrail — that use case is unaffected.
 """
 
 from __future__ import annotations
@@ -23,8 +23,6 @@ from __future__ import annotations
 from typing import Any
 
 from llmcore.guardrails import REFUSAL_MESSAGE, DefaultGuardrail  # re-exported
-
-from .datasets import SENTINEL
 
 # Backward-compat alias — Underwriter code historically imported `Guardrail`.
 Guardrail = DefaultGuardrail
@@ -53,5 +51,11 @@ def build_guardrail(backend: Any = None) -> DefaultGuardrail:
 
     Pass a `backend` (a ModelBackend) to enable the semantic LLM input check — the
     same layer the chat gateway ships. Omit it for regex-only mode (unit tests).
+
+    The guardrail intentionally carries NO `confidential_tokens`: the run-time
+    sentinel is withheld from the guardrail so the delta between guard-on and
+    guard-off on the sensitive axis measures real pattern generalisation, not
+    fixture string-match. This resolves the sentinel-match circularity documented
+    in the previous version of this module.
     """
-    return _EvalGuardrail(confidential_tokens=[SENTINEL], backend=backend)
+    return _EvalGuardrail(backend=backend)
