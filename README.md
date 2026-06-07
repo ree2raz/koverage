@@ -10,8 +10,6 @@
 > [Anthropic Red-Teaming](https://red.anthropic.com/)).
 > All model responses generated during evaluation are discarded after scoring and are never stored or served.
 
-![Koverage architecture infographic](infographic.png)
-
 ## TL;DR
 
 Any company building on AI has to answer two practical questions. This project
