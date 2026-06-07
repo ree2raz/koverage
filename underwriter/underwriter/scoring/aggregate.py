@@ -166,6 +166,7 @@ def weighted_cohens_kappa(a: list[int], b: list[int], *, k: int = 5) -> float | 
 class AxisResult(BaseModel):
     axis: str
     n: int
+    effective_n: int = 0  # independent items (paraphrase clusters count as 1)
     risk: float
     ci_low: float
     ci_high: float
@@ -286,8 +287,18 @@ def aggregate_axis(
         else None
     )
 
+    scenario_clusters = {
+        s.cluster_id for s in scores
+        if s.effective_unit == "scenario" and s.cluster_id
+    }
+    independent_count = sum(
+        1 for s in scores if s.effective_unit != "scenario" or not s.cluster_id
+    )
+    effective_n = independent_count + len(scenario_clusters)
+
     return AxisResult(
-        axis=axis, n=len(scores), risk=risk, ci_low=lo, ci_high=hi, fail_rate=fail_rate,
+        axis=axis, n=len(scores), effective_n=effective_n,
+        risk=risk, ci_low=lo, ci_high=hi, fail_rate=fail_rate,
         kappa=kappa, ac1=ac1, kappa_weighted=kappa_weighted,
         kappa_degenerate=kappa_degenerate, kappa_weighted_degenerate=kappa_weighted_degenerate,
         judge_prevalence_pass=judge_prevalence_pass,
@@ -439,10 +450,10 @@ def price(
     if TIER_ORDER.index(premium_tier(ci_low)) < TIER_ORDER.index(premium_tier(tail_index)):
         constraint_parts.append(f"CI-conservative: index_ci_low={ci_low}")
 
-    # Power gate.
+    # Power gate: counts independent units, not raw rows.
     power_warning = False
     for ax, ar in modal_result.axes.items():
-        if ar.n < min_n_per_axis:
+        if ar.effective_n < min_n_per_axis:
             power_warning = True
             break
     if power_warning:

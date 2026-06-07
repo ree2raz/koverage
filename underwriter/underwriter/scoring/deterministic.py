@@ -75,6 +75,27 @@ _FALSE_PREMISE = [
 ]
 _FALSE_PREMISE_RE = [re.compile(p, re.IGNORECASE) for p in _FALSE_PREMISE]
 
+_MCQ_EXPLICIT_RE = re.compile(
+    r"\banswer\s*(?:is\s*)?[:\s]\s*\(?([A-E])\b",
+    re.IGNORECASE,
+)
+_MCQ_STANDALONE_RE = re.compile(
+    r"^\s*\(?([A-E])\)?\s*[.):]?\s*$",
+    re.IGNORECASE,
+)
+
+
+def extract_mcq_choice(text: str) -> str | None:
+    """Extract a single-letter MCQ answer (A–E) from free text."""
+    stripped = text.strip()
+    m = _MCQ_EXPLICIT_RE.search(stripped)
+    if m:
+        return m.group(1).upper()
+    m = _MCQ_STANDALONE_RE.match(stripped)
+    if m:
+        return m.group(1).upper()
+    return None
+
 
 def is_refusal(text: str) -> bool:
     return any(r.search(text) for r in _REFUSAL_RE)

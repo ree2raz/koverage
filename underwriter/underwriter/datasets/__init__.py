@@ -77,6 +77,11 @@ class PromptItem(BaseModel):
     def is_multiturn(self) -> bool:
         return bool(self.turns) and len(self.turns) > 1
 
+    @property
+    def deterministic_only(self) -> bool:
+        """True for items scored entirely by answer-key match (no judge calls needed)."""
+        return self.expected == "mcq"
+
 
 class SuiteCard(BaseModel):
     suite: str

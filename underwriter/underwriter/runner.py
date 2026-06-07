@@ -159,7 +159,9 @@ def _run_item(
         cost += sum(
             cost_usd(model, r.usage.prompt_tokens, r.usage.completion_tokens) for r in reply.responses
         )
-    verdicts = judges.score(item, final_text)
+    # Skip dual-judge calls for MCQ items: risk is fully determined by
+    # answer-key match, so judge calls produce meaningless κ/AC1 at extra cost.
+    verdicts = {} if item.deterministic_only else judges.score(item, final_text)
     score = combine(item, final_text, verdicts, sentinel=sentinel)
     return score, latency, cost
 
