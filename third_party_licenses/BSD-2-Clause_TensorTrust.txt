@@ -1,0 +1,68 @@
+BSD 2-Clause License — TensorTrust
+==================================
+
+Applies to: underwriter/underwriter/datasets/suites/sensitive_tensortrust.yaml
+
+Canonical URL: https://opensource.org/licenses/BSD-2-Clause
+Upstream dataset: https://huggingface.co/datasets/qxcv/tensor-trust
+Upstream mirror:  https://github.com/HumanCompatibleAI/tensor-trust-data
+Upstream commit:  4de2b2fe01ba0cb6fbf7cbb9f1a3fabaf8157372
+
+----------------------------------------------------------------------
+
+BSD 2-Clause License
+
+Copyright (c) 2023, Sam Toyer, Olivia Watkins, Ethan Adrian Mendes,
+                Justin Svegliato, Luke Bailey, Tiffany Wang,
+                Isaac Ong, Karim Elmaaroufi, Pieter Abbeel,
+                Trevor Darrell, Evan Huang, Kristian Kersting,
+                Anca Dragan and the TensorTrust project contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in
+   the documentation and/or other materials provided with the
+   distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------------
+
+Notes on this redistribution
+
+- Only a sampled subset of the upstream TensorTrust `extraction` and
+  `hijacking` attack corpora is bundled in the Koverage repository
+  (70 of each, 140 of ~560,000 attacks). The full corpus remains
+  available at the upstream HuggingFace repo.
+- Context-overflow attacks (length > 2,000 characters) were filtered
+  out of the bundled sample so the items fit a single eval prompt
+  within a standard context window. No prompt text was edited.
+- The bundled YAML file reuses the upstream attack text verbatim.
+  The sampling and filtering are documented in the top-level NOTICE
+  file of this repository.
+- TensorTrust attacks are prompt-injection or sensitive-data-extraction
+  probes. They are bundled in this repository strictly as evaluation
+  fixtures to measure model resistance to such attacks; they are not
+  intended to be used as real attack payloads. See the README's
+  "Research & Educational Use Notice" and "Content advisory" sections.
+- This BSD-2-Clause notice is included alongside the redistribution
+  so that downstream users can satisfy the BSD-2-Clause clauses
+  without needing to re-fetch the upstream dataset card.

@@ -10,6 +10,23 @@
 > [Anthropic Red-Teaming](https://red.anthropic.com/)).
 > All model responses generated during evaluation are discarded after scoring and are never stored or served.
 
+> **Content advisory**
+> Two of the bundled evaluation suites contain prompts with harmful, sensitive, or
+> prompt-injection content. They are present **only as safety-eval fixtures** and are
+> not intended for any other use:
+>
+> - `underwriter/underwriter/datasets/suites/jailbreak_orbench.yaml` — 60 of the 150
+>   items (subset `or-bench-toxic`, six per category across ten categories) contain
+>   explicitly harmful instructions. They are used to measure whether the model under
+>   test refuses, not whether it complies.
+> - `underwriter/underwriter/datasets/suites/sensitive_tensortrust.yaml` — all 140
+>   items are prompt-extraction or prompt-hijacking attacks used to measure
+>   model resistance to prompt-injection.
+>
+> By running the Underwriter eval you agree you are operating in a research /
+> red-team evaluation context. Do not surface, log, or serve model responses
+> generated against these prompts. They are discarded after scoring by design.
+
 ## TL;DR
 
 Any company building on AI has to answer two practical questions. This project
@@ -59,6 +76,32 @@ and the cost math are written once and used by both.
 | **Underwriter**       | A safety inspector that scores models (`underwriter/`)     | Know how risky a model is _before_ trusting it with real users                                 |
 | **Shared core**       | The common plumbing both halves reuse (`core/`)            | Model routing and cost math written once, so nothing is built twice                            |
 | **Deploy**            | One-command startup + cloud configs (`deploy/`)            | Anyone can run the whole thing with a single command                                           |
+
+---
+
+## Datasets & Attribution
+
+The Underwriter eval harness ships **sampled subsets** of five public safety and
+factual-evaluation datasets inside `underwriter/underwriter/datasets/suites/`.
+These bundled data files are **redistributions of upstream content** and remain
+governed by their original licenses (CC-BY-4.0, MIT, BSD-2-Clause). The Koverage
+**source code** is licensed under Apache-2.0 (see [`LICENSE`](LICENSE)); the data
+files are not.
+
+Full attribution — authors, papers, source URLs, pinned upstream commit, license,
+and the modifications made to each dataset — is recorded in
+[`NOTICE`](NOTICE) at the repository root. Copies of each upstream license live
+in [`third_party_licenses/`](third_party_licenses/). If you reuse any of the
+bundled suite files, preserve the attribution and license text alongside any
+redistribution.
+
+| Suite file                              | Upstream dataset           | License      | Items |
+| --------------------------------------- | -------------------------- | ------------ | ----- |
+| `bias_bbq.yaml`                         | BBQ (Parrish et al. 2022)  | CC-BY-4.0    | 150   |
+| `factual_halueval.yaml`                 | HaluEval (Ke et al. 2023)  | MIT          | 120   |
+| `factual_medmcqa.yaml`                  | MedMCQA (Pal et al. 2022)  | MIT          | 50    |
+| `jailbreak_orbench.yaml`                | OR-Bench (Cui et al. 2024) | CC-BY-4.0    | 150   |
+| `sensitive_tensortrust.yaml`            | TensorTrust (Toyer 2023)   | BSD-2-Clause | 140   |
 
 ---
 

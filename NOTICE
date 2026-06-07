@@ -1,0 +1,135 @@
+# Attribution and Modification Notice — Koverage
+
+Copyright 2026 Rituraj
+
+This product includes data derived from the following public datasets,
+each used under its own license. Modifications (sampling, reformatting
+to YAML) are noted per entry. The **code** of Koverage is licensed under
+the Apache License, Version 2.0 (see the LICENSE file at the repository
+root). The **data files** in `underwriter/underwriter/datasets/suites/`
+are redistributions of upstream datasets and remain governed by their
+original licenses; a copy of each upstream license is included in
+`third_party_licenses/`.
+
+If you reuse any of the bundled suite files, preserve the attribution
+and license text in this NOTICE alongside any redistribution.
+
+================================================================
+1) BBQ — Bias Benchmark for QA
+   Authors:    Alicia Parrish, Angelica Chen, Nikita Nangia,
+               Vishakha Padmakumar, Jason Phang, Hira Thompson,
+               Junxian Htut, Samuel R. Bowman (2022)
+   Paper:      "BBQ: A Hand-Built Bias Benchmark for Question Answering"
+   Source:     https://huggingface.co/datasets/Elfsong/BBQ
+   Mirror:     https://github.com/nyu-mll/BBQ
+   Commit:     56cd2dcb60a10288b4f1a9c8cff6cf120141c08a
+   License:    CC-BY-4.0
+               (https://creativecommons.org/licenses/by/4.0/legalcode)
+   Modifications: Sampled 150 items across 11 demographic categories
+                  (age, disability_status, gender_identity, nationality,
+                  physical_appearance, race_ethnicity, race_x_gender,
+                  race_x_ses, religion, ses, sexual_orientation);
+                  reformatted from upstream JSONL to YAML with answer
+                  keys and severity tags; no prompt text was edited.
+   Suite:      underwriter/underwriter/datasets/suites/bias_bbq.yaml
+
+================================================================
+2) HaluEval — Hallucination Evaluation Benchmark
+   Authors:    Junfeng Ke, Yifan Peng, Fei Sun, Xuanyu Zhu, Minfeng Zhu,
+               Pingfu Chao, Xuye Liu, Weizhi Li, Xiaoyu Wang, Xuming Hu
+               (2023)
+   Paper:      "HaluEval: A Hallucination Evaluation Benchmark for the
+                Language Model Evaluation"
+   Source:     https://huggingface.co/datasets/pminervini/HaluEval
+   Commit:     12a856119f03975a94509091e8cada3e6be6ead7
+   License:    MIT
+               (https://opensource.org/licenses/MIT)
+   Modifications: Sampled 120 QA items from the `qa` split; added
+                  per-item severity and category metadata; reformatted
+                  to YAML; no prompt text was edited.
+   Suite:      underwriter/underwriter/datasets/suites/factual_halueval.yaml
+
+================================================================
+3) MedMCQA
+   Authors:    Ankit Pal, Logesh Kumar Umapathi, Malaikannan Sankarasubbu
+               (2022)
+   Paper:      "MedMCQA: A Large-scale Multi-Subject Multi-Choice Dataset
+                for Medical Domain Question Answering"
+   Source:     https://huggingface.co/datasets/openlifescienceai/medmcqa
+   Commit:     91c6572c454088bf71b679ad90aa8dffcd0d5868
+   License:    MIT
+               (https://opensource.org/licenses/MIT)
+   Modifications: Sampled 50 items balanced across 21 medical subjects
+                  (Anaesthesia, Anatomy, Biochemistry, Dental, ENT,
+                  Forensic Medicine, Gynaecology & Obstetrics, Medicine,
+                  Microbiology, Ophthalmology, Orthopaedics, Pathology,
+                  Pediatrics, Pharmacology, Physiology, Psychiatry,
+                  Radiology, Skin, Social & Preventive Medicine, Surgery,
+                  Unknown); severity=3 (clinical misadvice liability);
+                  reformatted to YAML with answer keys; no prompt text
+                  was edited.
+   Suite:      underwriter/underwriter/datasets/suites/factual_medmcqa.yaml
+
+================================================================
+4) OR-Bench
+   Authors:    Justin Cui, Wei-Lin Chiang, Ion Stoica, Cho-Jui Hsieh
+               (2024)
+   Paper:      "OR-Bench: An Over-Refusal Benchmark for Large Language
+                Models"  (Cui et al.; technical report on the dataset)
+   Source:     https://huggingface.co/datasets/bench-llm/OR-Bench
+   Commit:     e36d8b80e81837c8a8f264bbb2a49f1b32c7e272
+   License:    CC-BY-4.0
+               (https://creativecommons.org/licenses/by/4.0/legalcode)
+   Modifications: 90 benign items sampled from `or-bench-80k` (9 per
+                  category) and 60 harmful items sampled from
+                  `or-bench-toxic` (6 per category), across 10 shared
+                  categories; reformatted to YAML with severity tags
+                  and expected-behaviour markers; no prompt text was
+                  edited.
+   Content advisory: 60 items in the `or-bench-toxic` subset contain
+                     harmful-instruction content. They are present
+                     solely as evaluation fixtures to measure model
+                     refusal behaviour; see the README's "Content
+                     advisory" section before running the suite.
+   Suite:      underwriter/underwriter/datasets/suites/jailbreak_orbench.yaml
+
+================================================================
+5) TensorTrust
+   Authors:    Sam Toyer, Olivia Watkins, Ethan Adrian Mendes, Justin
+               Svegliato, Luke Bailey, Tiffany Wang, Isaac Ong, Karim
+               Elmaaroufi, Pieter Abbeel, Trevor Darrell, Evan Huang,
+               Kristian Kersting, Anca Dragan
+               (2023)
+   Paper:      "Tensor Trust: Interpretable Prompt Injection Attacks
+                Against an Applied Text-to-SQL System"
+   Source:     https://huggingface.co/datasets/qxcv/tensor-trust
+   Mirror:     https://github.com/HumanCompatibleAI/tensor-trust-data
+   Commit:     4de2b2fe01ba0cb6fbf7cbb9f1a3fabaf8157372
+   License:    BSD-2-Clause
+               (https://opensource.org/licenses/BSD-2-Clause)
+   Modifications: 70 extraction attacks and 70 hijacking attacks
+                  (140 total); context-overflow attacks filtered out
+                  (max_attack_len = 2000 chars); reformatted to YAML
+                  with severity=3 and `attack_type` metadata; no
+                  prompt text was edited.
+   Suite:      underwriter/underwriter/datasets/suites/sensitive_tensortrust.yaml
+
+================================================================
+
+Indication of changes summary (CC-BY-4.0 §3(b) compliance)
+
+For the CC-BY-4.0 suites (BBQ, OR-Bench), the following changes were
+made to the upstream datasets in the course of preparing these
+redistributions:
+
+- Sampling: only a small subset of the full upstream dataset is
+  included, as enumerated above (e.g. 150 of ~113,000 BBQ items).
+- Reformatting: upstream JSONL/CSV was converted to a single YAML
+  document with explicit `id`, `severity`, `category`, and
+  `meta.license` / `meta.snapshot` fields per item.
+- Annotation: per-item `expected` field (mcq / comply / no_leak / etc.)
+  was added to drive the deterministic scoring pipeline.
+
+No prompt text in `items[].prompt` was edited. The full upstream
+commit hash is preserved in `meta.snapshot` and in this NOTICE so
+that downstream users can verify the source of each item.
