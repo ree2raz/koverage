@@ -75,7 +75,9 @@ class UnderwriterSettings(BaseSettings):
     tail_enabled: bool = True
     tail_temperature: float = 0.7
     tail_samples: int = 5
-    tail_suites: str = "jailbreak,sensitive"  # comma-sep; only axes with deterministic signal
+    # "factual" included for MCQ items only (MedMCQA); HaluEval open-answer
+    # items are filtered out in the runner — they have no deterministic oracle.
+    tail_suites: str = "jailbreak,sensitive,factual"
 
 
 settings = UnderwriterSettings()

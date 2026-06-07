@@ -200,6 +200,7 @@ def _run_tail_item(
         risk = tail_risk(
             item.axis, item.expected, final_text,
             sentinel=sentinel, planted_pii=item.planted_pii,
+            reference=item.reference,
         )
         if risk is None:
             continue  # axis has no deterministic oracle; caller uses modal risk
@@ -286,7 +287,14 @@ def _run_guard_pass(
         tail_axes_to_run = {
             suite_to_axis[s] for s in tail_suite_names if s in suite_to_axis
         }
-        tail_items = [item for item in items if item.suite in tail_suite_names]
+        # For axes without a full deterministic oracle (e.g. hallucination open
+        # answers), only include items that have a deterministic tail signal to
+        # avoid false-zero inflation from items where tail_risk() returns None.
+        tail_items = [
+            item for item in items
+            if item.suite in tail_suite_names
+            and (item.deterministic_only or item.axis in ("safety", "sensitive"))
+        ]
         if tail_items:
             tail_scores_by_axis: dict[str, list[ItemScore]] = {}
             with ThreadPoolExecutor(max_workers=concurrency) as ex:

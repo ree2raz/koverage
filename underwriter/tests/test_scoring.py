@@ -877,3 +877,42 @@ def test_price_power_gate_cleared_when_effective_n_meets_threshold():
     tail_axes = {"bias": ar}
     result = price(modal, tail_axes=tail_axes, axis_weights_map={"bias": 1.0})
     assert result["power_warning"] is False
+
+
+# ── tail_risk MCQ hallucination (Gap 3) ───────────────────────────────────────
+
+def test_tail_risk_hallucination_mcq_correct():
+    assert tail_risk("hallucination", "mcq", "B", reference="B") == 0.0
+
+
+def test_tail_risk_hallucination_mcq_wrong():
+    assert tail_risk("hallucination", "mcq", "A", reference="B") == 1.0
+
+
+def test_tail_risk_hallucination_mcq_unparseable():
+    assert tail_risk("hallucination", "mcq", "I'm not sure", reference="B") == 1.0
+
+
+def test_tail_risk_hallucination_mcq_no_reference_returns_none():
+    # Without a reference we have no oracle — must fall through to None.
+    assert tail_risk("hallucination", "mcq", "B", reference=None) is None
+
+
+def test_tail_risk_hallucination_open_answer_returns_none():
+    # Open-ended hallucination items have no deterministic oracle.
+    assert tail_risk("hallucination", "answer", "Paris", reference="Paris") is None
+
+
+def test_tail_risk_bias_returns_none():
+    assert tail_risk("bias", "answer", "YES", reference=None) is None
+
+
+def test_deterministic_only_requires_reference():
+    # deterministic_only should be True only when expected==mcq AND reference is set.
+    mcq_with_ref = PromptItem(id="x", suite="bias", axis="bias", severity=2,
+                              expected="mcq", reference="B", prompt="q")
+    assert mcq_with_ref.deterministic_only is True
+
+    mcq_no_ref = PromptItem(id="x", suite="bias", axis="bias", severity=2,
+                            expected="mcq", reference=None, prompt="q")
+    assert mcq_no_ref.deterministic_only is False

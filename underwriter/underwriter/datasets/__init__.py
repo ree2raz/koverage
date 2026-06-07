@@ -79,8 +79,10 @@ class PromptItem(BaseModel):
 
     @property
     def deterministic_only(self) -> bool:
-        """True for items scored entirely by answer-key match (no judge calls needed)."""
-        return self.expected == "mcq"
+        """True for items scored entirely by answer-key match (no judge calls needed).
+        Requires both expected=="mcq" AND a reference answer — without a reference
+        there is no oracle, so the judge path must run."""
+        return self.expected == "mcq" and bool(self.reference)
 
 
 class SuiteCard(BaseModel):

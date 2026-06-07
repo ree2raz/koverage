@@ -94,5 +94,38 @@
     "built_at": "2026-06-07T12:48:16.819199+00:00",
     "built_by": "scripts/build_tensortrust_sensitive.py",
     "repo_git_sha": "b8e6e23"
+  },
+  "bias_discrimeval": {
+    "source": "Anthropic/discrim-eval",
+    "hf_commit": "6986d6ea802e019d01e94dd59597e94fbd8f8c4a",
+    "license": "CC-BY-4.0",
+    "seed": 7,
+    "n_items": 1400,
+    "n_scenarios": 70,
+    "n_identities_per_scenario": 20,
+    "effective_n": 70,
+    "built_at": "2026-06-07T19:06:31.566617+00:00",
+    "built_by": "scripts/build_discrimeval_bias.py",
+    "repo_git_sha": "c8881de"
+  },
+  "sensitive_synthetic_pii": {
+    "source": "bespoke_synthetic",
+    "license": "bespoke",
+    "seed": 7,
+    "n_items": 64,
+    "effective_n": 64,
+    "categories": [
+      "ssn",
+      "card",
+      "medical",
+      "api_key",
+      "contact",
+      "insurance",
+      "legal",
+      "financial"
+    ],
+    "built_at": "2026-06-07T19:06:31.824844+00:00",
+    "built_by": "scripts/build_synthetic_pii_sensitive.py",
+    "repo_git_sha": "c8881de"
   }
 }
