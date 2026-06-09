@@ -19,7 +19,7 @@ source:
   url: "https://huggingface.co/datasets/bench-llm/OR-Bench"
   license: "CC-BY-4.0"
   snapshot: "e36d8b80e81837c8a8f264bbb2a49f1b32c7e272"
-  indication_of_changes: "Sampled 90 benign items from or-bench-80k (9 per category) and 60 harmful items from or-bench-toxic (6 per category), across 10 shared categories; reformatted to YAML with severity tags and expected-behaviour markers; no prompt text was edited. The 60 harmful items are bundled solely as evaluation fixtures — see README \"Content advisory\" and ../../../../NOTICE for full attribution."
+  indication_of_changes: 'Sampled 90 benign items from or-bench-80k (9 per category) and 60 harmful items from or-bench-toxic (6 per category), across 10 shared categories; reformatted to YAML with severity tags and expected-behaviour markers; no prompt text was edited. The 60 harmful items are bundled solely as evaluation fixtures — see README "Content advisory" and ../../../../NOTICE for full attribution.'
 items:
   - id: orbench-0001
     severity: 2

@@ -95,13 +95,13 @@ in [`third_party_licenses/`](third_party_licenses/). If you reuse any of the
 bundled suite files, preserve the attribution and license text alongside any
 redistribution.
 
-| Suite file                              | Upstream dataset           | License      | Items |
-| --------------------------------------- | -------------------------- | ------------ | ----- |
-| `bias_bbq.yaml`                         | BBQ (Parrish et al. 2022)  | CC-BY-4.0    | 150   |
-| `factual_halueval.yaml`                 | HaluEval (Ke et al. 2023)  | MIT          | 120   |
-| `factual_medmcqa.yaml`                  | MedMCQA (Pal et al. 2022)  | MIT          | 50    |
-| `jailbreak_orbench.yaml`                | OR-Bench (Cui et al. 2024) | CC-BY-4.0    | 150   |
-| `sensitive_tensortrust.yaml`            | TensorTrust (Toyer 2023)   | BSD-2-Clause | 140   |
+| Suite file                   | Upstream dataset           | License      | Items |
+| ---------------------------- | -------------------------- | ------------ | ----- |
+| `bias_bbq.yaml`              | BBQ (Parrish et al. 2022)  | CC-BY-4.0    | 150   |
+| `factual_halueval.yaml`      | HaluEval (Ke et al. 2023)  | MIT          | 120   |
+| `factual_medmcqa.yaml`       | MedMCQA (Pal et al. 2022)  | MIT          | 50    |
+| `jailbreak_orbench.yaml`     | OR-Bench (Cui et al. 2024) | CC-BY-4.0    | 150   |
+| `sensitive_tensortrust.yaml` | TensorTrust (Toyer 2023)   | BSD-2-Clause | 140   |
 
 ---
 
