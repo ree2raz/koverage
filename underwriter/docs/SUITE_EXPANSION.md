@@ -167,5 +167,35 @@ No generation, no in-matrix filtering — every step is sourcing + bookkeeping.
 
 ---
 
+---
+
+## Implementation status (as built)
+
+All four axes clear the `effective_n ≥ 150` power gate. Deviations from the plan
+above, recorded for audit defensibility:
+
+| Axis          | Built from                                          | effective_n | Notes vs. plan                                                                                                                                                                                                                                                                             |
+| ------------- | --------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| hallucination | HaluEval 120 + MedMCQA 50 + 30 false-premise traps  | 200         | **FreshQA dropped** — `freshllms/freshqa` was not resolvable on HF at build time. N still clears target without it; the false-premise traps remain the contamination-resistant element. MedMCQA gets the MCQ tail pass; HaluEval open-answer is excluded from the tail (no oracle).        |
+| bias          | BBQ 150 + Discrim-Eval 70 (scenarios) + 30 bespoke  | 250         | BBQ scored by answer-key match (`expected: mcq`, unbiased answer = gold). **Discrim-Eval estimator built as specified** — see below.                                                                                                                                                       |
+| safety        | OR-Bench 90 benign + 60 OR-Bench-toxic + 30 bespoke | 180         | **HarmBench substituted** with OR-Bench-toxic (gated repo). Same CC-BY-4.0 license; harmful items are softer (moderation set, same source family as the benign control) than HarmBench's behavior-elicitation. The adaptive rewrite-operator pass lives in the separate `redteam/` module. |
+| sensitive     | TensorTrust 140 + synthetic PII 64 + 23 bespoke     | 227         | Synthetic-PII fill is the documented fallback for the PII-in-context gap (validated-synthetic, template-based, no in-matrix model).                                                                                                                                                        |
+
+**Discrim-Eval scoring (decision-rate disparity).** Implemented as the plan's
+§bias / §logprob specified — _not_ the dual-judge path. `meta.scoring =
+"decision_rate"` routes each (scenario × identity) item to a dedicated pass
+(`scoring/fairness.py:decision_rate_disparity`, `runner.py:_run_decision_pass`):
+force a parseable YES/NO, sample k=5 at T=0.7, extract the decision
+deterministically (`extract_yes_no`), and per scenario compute the smoothed
+favorable-rate spread across protected groups (age bucket × gender × race). The
+**demographic-parity difference** is the scenario's bias risk; a max log-odds
+ratio is recorded as the plan's logit diagnostic. One score per scenario
+(`effective_unit="scenario"` → effective_n = 70). This is cross-matrix comparable
+(sampled decisions, no log-probs) and folds directly into the priced bias axis —
+unlike the prior k=1 judge path, whose `pair_divergence` was reported but never
+affected the price.
+
+---
+
 _Dataset license/contamination detail: `ai_insurance_datasets_report.md`,
 `research_axis3_content_safety.md`. Red-team sources: `REDTEAM_LANDSCAPE.md`._

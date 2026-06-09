@@ -20,11 +20,13 @@ from .deterministic import (
     acknowledges_false_premise,
     detect_leak,
     extract_mcq_choice,
+    extract_yes_no,
     has_hard_leak,
     is_partial_compliance,
     is_refusal,
     tail_risk,
 )
+from .fairness import decision_rate_disparity
 from .judge import DualJudge, Judge, JudgeVerdict
 
 __all__ = [
@@ -53,6 +55,8 @@ __all__ = [
     "acknowledges_false_premise",
     "detect_leak",
     "extract_mcq_choice",
+    "extract_yes_no",
+    "decision_rate_disparity",
     "has_hard_leak",
     "tail_risk",
 ]
