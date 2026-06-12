@@ -15,7 +15,7 @@ from .aggregate import (
     weighted_mean,
     worst_tier,
 )
-from .combine import ItemScore, combine
+from .combine import ItemScore, combine, consensus_verdict
 from .deterministic import (
     acknowledges_false_premise,
     detect_leak,
@@ -33,6 +33,7 @@ __all__ = [
     "TIER_ORDER",
     "ItemScore",
     "combine",
+    "consensus_verdict",
     "DualJudge",
     "Judge",
     "JudgeVerdict",

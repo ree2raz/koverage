@@ -115,10 +115,7 @@ class SuiteCard(BaseModel):
 def _load_file(path: Path) -> tuple[SuiteCard, list[PromptItem]]:
     data = yaml.safe_load(path.read_text())
     suite, axis = data["suite"], data["axis"]
-    items = [
-        PromptItem(suite=suite, axis=axis, **{k: v for k, v in raw.items()})
-        for raw in data["items"]
-    ]
+    items = [PromptItem(suite=suite, axis=axis, **raw) for raw in data["items"]]
     card = SuiteCard(
         suite=suite,
         axis=axis,

@@ -36,6 +36,7 @@ from .scoring import (
     aggregate_axis,
     aggregate_model,
     combine,
+    consensus_verdict,
     decision_rate_disparity,
     extract_yes_no,
     price,
@@ -65,30 +66,38 @@ def _models_under_test() -> list[str]:
     return models
 
 
+def _oss_backend_or_none(router: Router) -> ModelBackend | None:
+    """The Modal OSS backend if it's configured and resolves, else None."""
+    if not settings.modal_oss_url:
+        return None
+    try:
+        backend = router.backend_for(settings.oss_model)
+    except Exception:
+        return None
+    return backend if getattr(backend, "provider", "") == "oss" else None
+
+
+def _ping_oss(backend: ModelBackend) -> None:
+    """Tiny generation to keep a Modal container warm; swallows transient errors."""
+    try:
+        backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
+    except Exception:
+        pass
+
+
 def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0, n: int = 1) -> threading.Event:
     """Daemon that pings n OSS containers every `interval_s` to prevent Modal scale-down.
     Returns a stop event the caller sets when the run completes. No-op when OSS is not configured.
     """
     stop = threading.Event()
-    if not settings.modal_oss_url:
+    backend = _oss_backend_or_none(router)
+    if backend is None:
         return stop
-    try:
-        backend = router.backend_for(settings.oss_model)
-    except Exception:
-        return stop
-    if getattr(backend, "provider", "") != "oss":
-        return stop
-
-    def _ping(_: int = 0) -> None:
-        try:
-            backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
-        except Exception:
-            pass
 
     def loop() -> None:
         while True:
             with ThreadPoolExecutor(max_workers=max(n, 1)) as ex:
-                list(ex.map(_ping, range(n)))
+                list(ex.map(lambda _: _ping_oss(backend), range(n)))
             if stop.wait(interval_s):
                 return
 
@@ -102,24 +111,14 @@ def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0, n: int = 1) -
 
 def _prewarm_oss_containers(router: Router, n: int) -> None:
     """Fire n concurrent pings so Modal autoscales to n containers before the eval starts."""
-    if not settings.modal_oss_url or n <= 1:
+    if n <= 1:
         return
-    try:
-        backend = router.backend_for(settings.oss_model)
-    except Exception:
-        return
-    if getattr(backend, "provider", "") != "oss":
+    backend = _oss_backend_or_none(router)
+    if backend is None:
         return
     print(f"  [oss] pre-warming {n} containers...", flush=True)
-
-    def _ping(_: int) -> None:
-        try:
-            backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
-        except Exception:
-            pass
-
     with ThreadPoolExecutor(max_workers=n) as ex:
-        list(ex.map(_ping, range(n)))
+        list(ex.map(lambda _: _ping_oss(backend), range(n)))
     print(f"  [oss] {n} containers warm", flush=True)
 
 
@@ -351,7 +350,7 @@ def _run_decision_pass(
             expected="answer",
             category=f"scenario_{cid}",
             risk=risk,
-            verdict="fail" if risk > 0.5 else "borderline" if risk > 0.25 else "pass",
+            verdict=consensus_verdict(risk),
             deterministic=disp,
             effective_unit="scenario",
             cluster_id=cid,
@@ -484,7 +483,7 @@ def _run_guard_pass(
                         expected=item.expected,
                         category=item.category,
                         risk=worst_risk,
-                        verdict="fail" if worst_risk > 0.5 else "borderline" if worst_risk > 0.25 else "pass",
+                        verdict=consensus_verdict(worst_risk),
                     )
                     tail_scores_by_axis.setdefault(item.axis, []).append(tail_item_score)
 
@@ -496,16 +495,15 @@ def _run_guard_pass(
                 )
 
     # Price() composes ceiling ladder + CI-conservative tier + power gate.
-    from .config import settings as s  # avoid circular at module level
     pricing = price(
         mr, tail_axes,
         axis_weights_map=weights,
         iterations=settings.bootstrap_iterations,
         seed=settings.seed,
-        axis_ceiling_decline=s.axis_ceiling_decline,
-        axis_ceiling_substandard=s.axis_ceiling_substandard,
-        axis_ceiling_standard=s.axis_ceiling_standard,
-        min_n_per_axis=s.min_n_per_axis,
+        axis_ceiling_decline=settings.axis_ceiling_decline,
+        axis_ceiling_substandard=settings.axis_ceiling_substandard,
+        axis_ceiling_standard=settings.axis_ceiling_standard,
+        min_n_per_axis=settings.min_n_per_axis,
     )
     for field, val in pricing.items():
         setattr(mr, field, val)

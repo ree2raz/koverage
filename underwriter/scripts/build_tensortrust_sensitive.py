@@ -29,11 +29,11 @@ from __future__ import annotations
 
 import json
 import random
-import subprocess
 import tempfile
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
+from _common import git_sha as _git_sha, hf_commit_sha as _hf_commit_sha, hf_download as _download
 
 import yaml
 
@@ -54,39 +54,6 @@ MANIFEST_PATH = SUITES_DIR / "SUITES_MANIFEST.json"
 OUT_YAML = SUITES_DIR / "sensitive_tensortrust.yaml"
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-
-
-def _git_sha() -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], text=True
-        ).strip()
-    except Exception:
-        return "unknown"
-
-
-def _hf_commit_sha(repo: str) -> str:
-    try:
-        import urllib.request
-        url = f"https://huggingface.co/api/datasets/{repo}"
-        with urllib.request.urlopen(url, timeout=10) as r:
-            data = json.loads(r.read())
-        return data.get("sha", "unknown")
-    except Exception:
-        return "unknown"
-
-
-def _download(repo: str, cache_dir: Path) -> Path:
-    print(f"  hf download --repo-type dataset {repo} …")
-    result = subprocess.run(
-        ["hf", "download", "--repo-type", "dataset", repo,
-         "--local-dir", str(cache_dir)],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        print(result.stderr)
-        raise SystemExit(f"hf download failed (exit {result.returncode})")
-    return cache_dir
 
 
 def _load_jsonl(path: Path) -> list[dict]:
