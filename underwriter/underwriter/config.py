@@ -28,7 +28,7 @@ class UnderwriterSettings(BaseSettings):
     # Dual cross-provider judges. Deliberately stronger than (and disjoint from)
     # the models under test, so no assistant grades itself or its sibling. The
     # pair is rotated if either judge model is added to models_under_test.
-    judge_a: str = "openai/gpt-4.1"
+    judge_a: str = "openai/gpt-4.1-nano"
     judge_b: str = "anthropic/claude-3.5-haiku"
 
     # Semantic backend for the input guardrail's LLM check. Kept identical to the
@@ -43,8 +43,9 @@ class UnderwriterSettings(BaseSettings):
     judge_temperature: float = 0.0
     seed: int = 7
     bootstrap_iterations: int = 1000
-    concurrency: int = 8        # frontier (OpenRouter) — I/O bound, high parallelism
-    oss_concurrency: int = 8    # OSS (Modal/vLLM) — vLLM batches internally, same parallelism
+    concurrency: int = 16       # frontier (OpenRouter) — I/O bound, high parallelism
+    oss_concurrency: int = 16   # OSS (Modal/vLLM) — vLLM batches internally, same parallelism
+    oss_prewarm_containers: int = 8  # concurrent pings at run start to trigger Modal autoscale
 
     # Optionally mirror eval traffic into Beacon so it appears in the dashboards.
     emit_to_beacon: bool = False
@@ -74,7 +75,8 @@ class UnderwriterSettings(BaseSettings):
     # pass is retained for reproducibility and κ/AC1 reporting.
     tail_enabled: bool = True
     tail_temperature: float = 0.7
-    tail_samples: int = 5
+    tail_samples: int = 5       # worst-of-k for safety/sensitive tail — keep at 5
+    dr_samples: int = 3         # k for decision-rate pass (bias/Discrim-Eval) — 3 is enough with Wilson CIs
     # "factual" included for MCQ items only (MedMCQA); HaluEval open-answer
     # items are filtered out in the runner — they have no deterministic oracle.
     tail_suites: str = "jailbreak,sensitive,factual"

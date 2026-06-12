@@ -32,7 +32,7 @@ image = (
         "vllm>=0.8",
         "huggingface_hub[hf_transfer]>=0.26",
     )
-    .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
+    .env({"HF_XET_HIGH_PERFORMANCE": "1"})
 )
 
 # Enforce-eager is crucial here to prevent an extra 30-60s of CUDA graph capture time

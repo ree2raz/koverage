@@ -65,10 +65,9 @@ def _models_under_test() -> list[str]:
     return models
 
 
-def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0) -> threading.Event:
-    """Daemon that pings the OSS container every `interval_s` so the Modal host
-    doesn't scale to zero during the long frontier passes. Returns a stop event
-    the caller sets when the run completes. No-op when OSS is not configured.
+def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0, n: int = 1) -> threading.Event:
+    """Daemon that pings n OSS containers every `interval_s` to prevent Modal scale-down.
+    Returns a stop event the caller sets when the run completes. No-op when OSS is not configured.
     """
     stop = threading.Event()
     if not settings.modal_oss_url:
@@ -80,22 +79,48 @@ def _spawn_oss_keepalive(router: Router, interval_s: float = 60.0) -> threading.
     if getattr(backend, "provider", "") != "oss":
         return stop
 
+    def _ping(_: int = 0) -> None:
+        try:
+            backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
+        except Exception:
+            pass
+
     def loop() -> None:
-        # immediate first ping — kicks the cold-start in parallel with run setup
         while True:
-            try:
-                backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
-            except Exception:
-                pass  # best-effort; main thread's retries handle real failures
+            with ThreadPoolExecutor(max_workers=max(n, 1)) as ex:
+                list(ex.map(_ping, range(n)))
             if stop.wait(interval_s):
                 return
 
     threading.Thread(target=loop, daemon=True, name="oss-keepalive").start()
     print(
         f"  [oss] routing {settings.oss_model} via Modal; "
-        f"keep-alive every {interval_s:.0f}s"
+        f"keep-alive {n}× every {interval_s:.0f}s"
     )
     return stop
+
+
+def _prewarm_oss_containers(router: Router, n: int) -> None:
+    """Fire n concurrent pings so Modal autoscales to n containers before the eval starts."""
+    if not settings.modal_oss_url or n <= 1:
+        return
+    try:
+        backend = router.backend_for(settings.oss_model)
+    except Exception:
+        return
+    if getattr(backend, "provider", "") != "oss":
+        return
+    print(f"  [oss] pre-warming {n} containers...", flush=True)
+
+    def _ping(_: int) -> None:
+        try:
+            backend.generate([Message(role=Role.USER, content="ping")], max_tokens=4)
+        except Exception:
+            pass
+
+    with ThreadPoolExecutor(max_workers=n) as ex:
+        list(ex.map(_ping, range(n)))
+    print(f"  [oss] {n} containers warm", flush=True)
 
 
 def _resolve_oss_backend(router: Router, model: str) -> tuple[str, ModelBackend]:
@@ -117,6 +142,19 @@ def _resolve_oss_backend(router: Router, model: str) -> tuple[str, ModelBackend]
             flush=True,
         )
         return fb, router.backend_for(fb)
+
+
+def _gemini_extra_params(model: str) -> dict:
+    """Disable Gemini 2.5+ thinking for eval calls.
+
+    Thinking tokens are counted against max_output_tokens and enabled by default
+    on Gemini 2.5+. For structured eval scoring we don't need reasoning — set
+    reasoning_effort=none (OpenRouter's unified param, maps to thinkingBudget=0).
+    Non-Gemini models on OpenRouter silently ignore this param.
+    """
+    if model.startswith("google/"):
+        return {"reasoning_effort": "none"}
+    return {}
 
 
 def _with_rate_limit_retry(fn, max_retries: int = 6, base_delay: float = 15.0):
@@ -151,6 +189,7 @@ def _run_item(
             "temperature": settings.gen_temperature,
             "max_tokens": settings.gen_max_tokens,
             "seed": settings.seed,
+            **_gemini_extra_params(model),
         },
     )
     latency = cost = 0.0
@@ -178,13 +217,14 @@ def _run_tail_item(
     sentinel: str,
     system_prompt: str,
 ) -> float:
-    """Generate `tail_samples` responses at `tail_temperature` and return worst-of-k risk.
+    """Generate `tail_samples` responses concurrently and return worst-of-k risk.
 
-    Scored deterministically only (no dual-judge calls). Per-sample seeds are spread
-    so that T>0 generation actually diverges across samples.
+    All k draws are dispatched in parallel. Scored deterministically only (no
+    dual-judge calls). Per-sample seeds spread so T>0 outputs diverge.
+    For OpenRouter (latency-bound) this is a 5× speedup; for vLLM the token
+    budget is fixed so total throughput is unchanged.
     """
-    worst = 0.0
-    for k in range(settings.tail_samples):
+    def _one_draw(k: int) -> float | None:
         assistant = Assistant(
             backend=backend,
             memory=Memory(system_prompt),
@@ -193,25 +233,24 @@ def _run_tail_item(
             gen_params={
                 "temperature": settings.tail_temperature,
                 "max_tokens": settings.gen_max_tokens,
-                "seed": settings.seed + k + 1,  # vary seed so outputs diverge
+                "seed": settings.seed + k + 1,
+                **_gemini_extra_params(model),
             },
         )
         final_text = ""
         for turn in item.user_turns():
             reply = _with_rate_limit_retry(lambda t=turn: assistant.chat(t))
             final_text = reply.text
-        risk = tail_risk(
+        return tail_risk(
             item.axis, item.expected, final_text,
             sentinel=sentinel, planted_pii=item.planted_pii,
             reference=item.reference,
         )
-        if risk is None:
-            continue  # axis has no deterministic oracle; caller uses modal risk
-        if risk > worst:
-            worst = risk
-        if worst >= 1.0:
-            break  # already at maximum, no point in more samples
-    return worst
+
+    with ThreadPoolExecutor(max_workers=settings.tail_samples) as ex:
+        risks = list(ex.map(_one_draw, range(settings.tail_samples)))
+    valid = [r for r in risks if r is not None]
+    return max(valid) if valid else 0.0
 
 
 def _run_decision_item(
@@ -222,15 +261,12 @@ def _run_decision_item(
     *,
     system_prompt: str,
 ) -> tuple[PromptItem, list[str | None], float, float]:
-    """Sample `tail_samples` YES/NO decisions for one (scenario × identity) probe.
+    """Sample `dr_samples` YES/NO decisions concurrently for one (scenario × identity) probe.
 
-    Decisions are sampled at `tail_temperature` (a *rate* is meaningless at T=0,
-    where every draw is identical) and extracted deterministically — no judge.
-    Returns the item, the per-sample decisions, and accumulated latency/cost.
+    All k draws are dispatched in parallel. Decisions extracted deterministically — no judge.
+    Returns the item, per-sample decisions, and accumulated latency/cost.
     """
-    decisions: list[str | None] = []
-    latency = cost = 0.0
-    for k in range(settings.tail_samples):
+    def _one_draw(k: int) -> tuple[str | None, float, float]:
         assistant = Assistant(
             backend=backend,
             memory=Memory(system_prompt),
@@ -238,20 +274,28 @@ def _run_decision_item(
             guardrail=guardrail,
             gen_params={
                 "temperature": settings.tail_temperature,
-                "max_tokens": 16,  # forced YES/NO — no need to pay for long generations
-                "seed": settings.seed + k + 1,  # vary seed so draws diverge
+                "max_tokens": 16,
+                "seed": settings.seed + k + 1,
+                **_gemini_extra_params(model),
             },
         )
+        lat = c = 0.0
         final_text = ""
         for turn in item.user_turns():
             reply = _with_rate_limit_retry(lambda t=turn: assistant.chat(t))
             final_text = reply.text
-            latency += reply.latency_s
-            cost += sum(
+            lat += reply.latency_s
+            c += sum(
                 cost_usd(model, r.usage.prompt_tokens, r.usage.completion_tokens)
                 for r in reply.responses
             )
-        decisions.append(extract_yes_no(final_text))
+        return extract_yes_no(final_text), lat, c
+
+    with ThreadPoolExecutor(max_workers=settings.dr_samples) as ex:
+        draws = list(ex.map(_one_draw, range(settings.dr_samples)))
+    decisions = [d for d, _, _ in draws]
+    latency = sum(lat for _, lat, _ in draws)
+    cost = sum(c for _, _, c in draws)
     return item, decisions, latency, cost
 
 
@@ -508,17 +552,27 @@ def run(
     run_dir.mkdir(parents=True, exist_ok=True)
     gen_f = (run_dir / "scores.jsonl").open("w")
 
-    # background keep-alive — only useful if the OSS model is actually being tested
+    # Pre-warm OSS containers so Modal autoscales before the eval starts.
+    if settings.oss_model in models:
+        _prewarm_oss_containers(router, settings.oss_prewarm_containers)
+
+    # background keep-alive — sends N concurrent pings to keep all containers warm
     keepalive_stop = (
-        _spawn_oss_keepalive(router) if settings.oss_model in models else threading.Event()
+        _spawn_oss_keepalive(router, n=settings.oss_prewarm_containers)
+        if settings.oss_model in models
+        else threading.Event()
     )
 
     results: list[ModelResult] = []
     resolved_models: list[str] = []
-    for original_model in models:
+
+    # Each model runs guard=off and guard=on in parallel; models themselves also
+    # run concurrently. OSS (Modal) and frontier (OpenRouter) are on separate
+    # backends so they don't share a rate-limit pool.
+    def _run_single_model(original_model: str) -> tuple[str, list[ModelResult], list[dict]]:
         model, backend = _resolve_oss_backend(router, original_model)
-        resolved_models.append(model)
-        # Run guard=off and guard=on in parallel — they're independent cells.
+        model_results: list[ModelResult] = []
+        all_records: list[dict] = []
         with ThreadPoolExecutor(max_workers=len(guard_options)) as guard_ex:
             guard_futures = {
                 guard: guard_ex.submit(
@@ -529,10 +583,20 @@ def run(
             }
             for guard in guard_options:
                 mr, records, msg = guard_futures[guard].result()
-                results.append(mr)
-                for rec in records:
-                    gen_f.write(json.dumps(rec, default=str) + "\n")
-                print(msg)
+                model_results.append(mr)
+                all_records.extend(records)
+                print(msg, flush=True)
+        return model, model_results, all_records
+
+    with ThreadPoolExecutor(max_workers=len(models)) as model_ex:
+        futs = {model_ex.submit(_run_single_model, m): m for m in models}
+        for fut in as_completed(futs):
+            model, model_results, all_records = fut.result()
+            resolved_models.append(model)
+            results.extend(model_results)
+            for rec in all_records:
+                gen_f.write(json.dumps(rec, default=str) + "\n")
+
     gen_f.close()
     keepalive_stop.set()
 
@@ -594,6 +658,7 @@ def _build_scorecard(results, weights, ts, models, judges, items) -> Scorecard:
         "tail_enabled": settings.tail_enabled,
         "tail_temperature": settings.tail_temperature,
         "tail_samples": settings.tail_samples,
+        "dr_samples": settings.dr_samples,
         "tail_suites": tail_suites(),
         # Fix A+B: pricing parameters.
         "axis_ceiling_decline": settings.axis_ceiling_decline,
