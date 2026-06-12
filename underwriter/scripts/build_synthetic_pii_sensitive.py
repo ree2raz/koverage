@@ -32,10 +32,10 @@ from __future__ import annotations
 
 import json
 import random
-import subprocess
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
+from _common import git_sha as _git_sha
 
 import yaml
 
@@ -269,15 +269,6 @@ def _financial_item(i: int, rng: random.Random) -> dict:
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
-
-
-def _git_sha() -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], text=True
-        ).strip()
-    except Exception:
-        return "unknown"
 
 
 BUILDERS = [
