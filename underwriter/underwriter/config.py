@@ -44,7 +44,10 @@ class UnderwriterSettings(BaseSettings):
     seed: int = 7
     bootstrap_iterations: int = 1000
     concurrency: int = 16       # frontier (OpenRouter) — I/O bound, high parallelism
-    oss_concurrency: int = 16   # OSS (Modal/vLLM) — vLLM batches internally, same parallelism
+    oss_concurrency: int = 32   # OSS (Modal/vLLM) — keep the per-container batch full
+                                # (paired with @modal.concurrent on the vLLM server);
+                                # the modal/DR passes send this many in-flight, the tail
+                                # pass sends oss_concurrency × tail_samples.
     oss_prewarm_containers: int = 8  # concurrent pings at run start to trigger Modal autoscale
 
     # Optionally mirror eval traffic into Beacon so it appears in the dashboards.
