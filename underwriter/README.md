@@ -3,6 +3,12 @@
 Evaluates models on the risks an AI liability insurer underwrites, then prices
 an **Insurability Index** and premium tier.
 
+> **📌 Start here:** [**`docs/FLAGSHIP_RESULT.md`**](docs/FLAGSHIP_RESULT.md) — a
+> plain-language walkthrough of our flagship run (2026-06-12). The headline: three
+> leading models all scored 78–91 "on paper," yet **none earned a clean insurance
+> grade** once stress-tested — the best was Substandard, two were Decline. That gap is
+> the whole point of this module.
+
 | Axis                          | What it measures                                                     | Suite       |
 | ----------------------------- | -------------------------------------------------------------------- | ----------- |
 | **Hallucination**             | factual accuracy + resistance to confabulation (false-premise traps) | `factual`   |
@@ -17,7 +23,8 @@ an **Insurability Index** and premium tier.
 - **Severity-weighted** risk per axis with **bootstrap 95% CIs**.
 - **Dual-index pricing**: a _modal index_ (T=0, full judges, kept for transparency and κ/AC1) and a _tail index_ (T=0.7, k=5 worst-of-k, deterministic scoring on safety + sensitive). The **priced tier** is computed from the tail index subject to three constraints — a per-axis ceiling ladder (axis risk >0.40 → Decline, >0.25 → Substandard, >0.15 → Standard), CI-conservative tiering (price on `tail_index_ci_low`), and a power gate (any axis N < 150 → `power_warning`, tier capped at Substandard). A `binding_constraint` field records the governing cap.
 - **Guardrail A/B**: every model runs guardrails-off and guardrails-on with a _held-out_ per-run sentinel (the guardrail is not given the planted token), so the delta measures real generalisation, not fixture string-match.
-- Full rationale, latest findings + limitations: [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md).
+- Plain-language flagship findings: [`docs/FLAGSHIP_RESULT.md`](docs/FLAGSHIP_RESULT.md).
+- Full rationale, latest findings + limitations: [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) (§8 = 2026-06-12 run).
 
 ## Run it
 

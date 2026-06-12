@@ -32,7 +32,7 @@ image = (
         "vllm>=0.8",
         "huggingface_hub[hf_transfer]>=0.26",
     )
-    .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
+    .env({"HF_XET_HIGH_PERFORMANCE": "1"})
 )
 
 # Enforce-eager is crucial here to prevent an extra 30-60s of CUDA graph capture time
@@ -49,6 +49,15 @@ _VLLM_CMD = [
     "--enforce-eager"
 ]
 
+# Input concurrency is the throughput lever. @modal.concurrent lets a SINGLE
+# container accept many requests at once so vLLM's continuous batching engages and
+# fills the KV cache. Without it Modal routes one request per container at a time
+# (observed in the 2026-06-12 run: Running:1 req, KV cache ~2%) — the single-stream
+# ~29 tok/s rate that stretched the full eval to ~3h instead of <1h. `target_inputs`
+# is the soft level the autoscaler aims for per container before adding another, so
+# load spreads across containers and *also* batches; `max_inputs` is the hard cap.
+# vLLM safely queues anything beyond live KV-cache capacity (shows as Waiting>0), so
+# a generous cap never OOMs.
 @app.cls(
     image=image,
     gpu="A10G",
@@ -58,6 +67,7 @@ _VLLM_CMD = [
     min_containers=1,  # FIXED: Replaces the deprecated keep_warm=1
     max_containers=8,  # Cap fan-out — keeps the eval under the account's infra rate limits
 )
+@modal.concurrent(max_inputs=32, target_inputs=16)
 class VLLMServer:
     @modal.enter()
     def start_server(self):

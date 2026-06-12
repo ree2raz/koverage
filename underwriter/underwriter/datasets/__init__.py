@@ -77,6 +77,32 @@ class PromptItem(BaseModel):
     def is_multiturn(self) -> bool:
         return bool(self.turns) and len(self.turns) > 1
 
+    @property
+    def deterministic_only(self) -> bool:
+        """True for items scored entirely by answer-key match (no judge calls needed).
+        Requires both expected=="mcq" AND a reference answer — without a reference
+        there is no oracle, so the judge path must run."""
+        return self.expected == "mcq" and bool(self.reference)
+
+    @property
+    def is_decision_rate(self) -> bool:
+        """True for clustered discrimination probes (Discrim-Eval) scored by
+        cross-identity decision-rate disparity rather than per-item judging.
+
+        These items must NOT go through the judge path: a single YES/NO answer is
+        not biased in isolation. They are routed to the decision-rate pass, which
+        samples each (scenario × identity) and measures the favorable-rate spread
+        across protected groups, emitting one scenario-level score. Identified by
+        an explicit `meta.scoring` marker, or (for already-built suites) by the
+        scenario cluster + identity payload."""
+        if self.meta.get("scoring") == "decision_rate":
+            return True
+        return (
+            self.expected == "answer"
+            and self.meta.get("effective_unit") == "scenario"
+            and isinstance(self.meta.get("identity"), dict)
+        )
+
 
 class SuiteCard(BaseModel):
     suite: str
